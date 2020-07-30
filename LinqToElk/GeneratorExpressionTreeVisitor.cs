@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Nest;
-using Remotion.Linq;
-using Remotion.Linq.Clauses;
 using Remotion.Linq.Parsing;
 
 namespace LinqToElk
@@ -13,7 +11,7 @@ namespace LinqToElk
     {
         private static IList<QueryContainer> _queryContainers = new List<QueryContainer>();
 
-        public string Field { get; set; }
+        public string Property { get; set; }
         public string Value { get; set; }
 
         public static List<QueryContainer> GetNestExpression(Expression linqExpression)
@@ -76,12 +74,65 @@ namespace LinqToElk
             {
                 _queryContainers.Add(new MatchPhraseQuery()
                 {
-                    Field = $"{Field}.keyword",
+                    Field = $"{Property}.keyword",
                     Query = Value
                 });
             }
             
+            if (expression.NodeType == ExpressionType.NotEqual)
+            {
+                _queryContainers.Add(new BoolQuery()
+                {
+                    MustNot =new QueryContainer[]{ new MatchPhraseQuery()
+                    {
+                        Field = $"{Property}.keyword",
+                        Query = Value
+                    }}
+                } );
+            }
+            
             return expression;
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression expression)
+        {
+            // In production code, handle this via method lookup tables.
+            if (expression.Method.Name ==  "Contains")
+            {
+
+                Visit(expression.Object);
+                Visit(expression.Arguments[0]);
+
+                
+                // if (tokens.Length == 1)
+                // {
+                //     _queryContainers.Add(new QueryStringQuery()
+                //     {
+                //         Fields=  new[]{ Property },
+                //         Query = "*" + Value + "*"
+                //     });
+                // }
+                // else
+                // {
+                //     _queryContainers.Add(new MultiMatchQuery()
+                //     {
+                //         Fields = new[]{ Property },
+                //         Type = TextQueryType.PhrasePrefix,
+                //         Query = Value,
+                //         MaxExpansions = 200
+                //     });
+                // }
+                _queryContainers.Add(new QueryStringQuery()
+                {
+                    Fields=  new[]{ Property },
+                    Query = "*" + Value + "*"
+                });
+                return expression;
+            }
+            else
+            {
+                return base.VisitMethodCall(expression); // throws
+            }
         }
 
         protected override Expression VisitConstant(ConstantExpression expression)
@@ -92,7 +143,7 @@ namespace LinqToElk
         
         protected override Expression VisitMember(MemberExpression expression)
         {
-            Field = expression.Member.Name.ToLower();
+            Property = expression.Member.Name.ToLower();
             return expression;
         }
 

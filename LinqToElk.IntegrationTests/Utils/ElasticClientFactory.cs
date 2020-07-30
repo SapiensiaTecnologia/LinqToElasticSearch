@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 using Elasticsearch.Net;
 using Nest;
 
-namespace LinqToElk
+namespace LinqToElk.IntegrationTests.Utils
 {
     public static class ElasticClientFactory
     {

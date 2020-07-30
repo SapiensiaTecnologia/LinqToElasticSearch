@@ -2,14 +2,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using Nest;
 using Remotion.Linq;
-using Remotion.Linq.Clauses;
-using Remotion.Linq.Clauses.ExpressionVisitors;
 using Remotion.Linq.Parsing.Structure;
 
 namespace LinqToElk
 {
     // The item type that our data source will return.
-    public class SampleDataSourceItem
+    public class SampleData
     {
         public string Name { get; set; }
         public string Description { get; set; }

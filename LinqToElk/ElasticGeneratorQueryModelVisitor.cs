@@ -29,26 +29,6 @@ namespace LinqToElk
         {
             _queryContainers = GeneratorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate);
             
-            // if (whereClause.Predicate is BinaryExpression expression)
-            // {
-            //     _queryWhereParts.Add(expression);
-            //
-            //     _queryContainers.Add(new MatchPhraseQuery()
-            //     {
-            //         Field = $"{((MemberExpression) expression.Left).Member.Name}.keyword",
-            //         Query = (string) ((ConstantExpression) expression.Right).Value
-            //     });
-            // };
-
-            
-            
-            
-            
-            // queryModel.TransformExpressions(e =>
-            //     ReferenceReplacingExpressionTreeVisitor.ReplaceClauseReferences(e, mapping, true));
-
-            // ExpressionTreeVisitor
-            
             base.VisitWhereClause (whereClause, queryModel, index);
         }
     }
