@@ -1,40 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Nest;
 using Remotion.Linq;
 
 namespace LinqToElk
 {
-    public class ElasticQueryExecutor : IQueryExecutor
+    public class ElasticQueryExecutor<U> : IQueryExecutor where U : class
     {
-        // Set up a proeprty that will hold the current item being enumerated.
-        public SampleDataSourceItem Current { get; private set; }
+        private readonly ElasticClient _elasticClient;
+        private readonly string _dataId;
+
+        public ElasticQueryExecutor(ElasticClient elasticClient, string dataId)
+        {
+            _elasticClient = elasticClient;
+            _dataId = dataId;
+        }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var whereExpressions = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
+            var queryContainers = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
-            var sampleDataSourceItems = new List<SampleDataSourceItem>();
-            
-            for (var i = 0; i < 10; i++)
-            {
-                // Set the current item so currentItemExpression can access it.
-                sampleDataSourceItems.Add(new SampleDataSourceItem
-                {
-                    Name = "Name " + i,
-                    Description = "This describes the item in position " + i
-                });
-            }
 
-            foreach (var whereExpression in whereExpressions)
+            var documents= _elasticClient.Search<U>(descriptor =>
             {
-                var right = whereExpression.Right.ToString();
-                right = right.Substring(1, right.Length - 2);
+                descriptor.Index(_dataId);
                 
-                sampleDataSourceItems = sampleDataSourceItems.Where(x => x.Name == right).ToList();
-            }
-            
-            return (IEnumerable<T>) sampleDataSourceItems;
+                if (queryContainers.Any())
+                {
+                    descriptor.Query(q => q.Bool(x => x.Must(queryContainers.ToArray())));
+                }
+                else
+                {
+                    descriptor.MatchAll();
+                }
+                return descriptor;
+            }).Documents;
+
+            return (IEnumerable<T>) documents;
         }
 
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)

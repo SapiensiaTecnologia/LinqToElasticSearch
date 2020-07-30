@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using FluentAssertions;
+using Nest;
 using Xunit;
 
 namespace LinqToElk.Tests
@@ -7,11 +9,13 @@ namespace LinqToElk.Tests
     public class RelinqSampleTests
     {
         private ElasticQueryable<SampleDataSourceItem> _sut;
+        private ElasticClient _elasticClient;
+        private const string DataId = "123456789";
 
         public RelinqSampleTests()
         {
-            // Create our IQueryable instance
-            _sut = new ElasticQueryable<SampleDataSourceItem>();
+            _elasticClient = ElasticClientFactory.CreateElasticClient("http://localhost:9200", "", "");
+            _sut = new ElasticQueryable<SampleDataSourceItem>(_elasticClient, DataId);
         }
 
         [Fact]
@@ -48,6 +52,10 @@ namespace LinqToElk.Tests
 
             list.Count.Should().Be(1);
             list[0].Name.Should().Be("Name 3");
+        }
+
+        protected void FlushElasticSearch()
+        {
         }
     }
 }

@@ -5,7 +5,9 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElk", "LinqToElk\LinqToElk.csproj", "{98E6B672-572F-485B-A6A3-7C34B59DABE5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElk.Tests", "LinqToElk.Tests\LinqToElk.Tests.csproj", "{4DCFC08A-25A3-4CD4-942E-AC4F9C69762B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElk.UnitTests", "LinqToElk.UnitTests\LinqToElk.UnitTests.csproj", "{4DCFC08A-25A3-4CD4-942E-AC4F9C69762B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElk.IntegrationTests", "LinqToElk.IntegrationTests\LinqToElk.IntegrationTests.csproj", "{43539260-38C2-465A-AC58-6B2619FE3768}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,5 +46,17 @@ Global
 		{4DCFC08A-25A3-4CD4-942E-AC4F9C69762B}.Release|x64.Build.0 = Release|Any CPU
 		{4DCFC08A-25A3-4CD4-942E-AC4F9C69762B}.Release|x86.ActiveCfg = Release|Any CPU
 		{4DCFC08A-25A3-4CD4-942E-AC4F9C69762B}.Release|x86.Build.0 = Release|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Debug|x64.Build.0 = Debug|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Debug|x86.Build.0 = Debug|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Release|x64.ActiveCfg = Release|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Release|x64.Build.0 = Release|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Release|x86.ActiveCfg = Release|Any CPU
+		{43539260-38C2-465A-AC58-6B2619FE3768}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
