@@ -6,7 +6,7 @@ using Remotion.Linq;
 
 namespace LinqToElk
 {
-    public class ElasticQueryExecutor<U> : IQueryExecutor where U : class
+    public class ElasticQueryExecutor<TU> : IQueryExecutor where TU : class
     {
         private readonly ElasticClient _elasticClient;
         private readonly string _dataId;
@@ -21,7 +21,7 @@ namespace LinqToElk
         {
             var queryContainers = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
-            var documents= _elasticClient.Search<U>(descriptor =>
+            var documents= _elasticClient.Search<TU>(descriptor =>
             {
                 descriptor.Index(_dataId);
                 
@@ -48,7 +48,6 @@ namespace LinqToElk
 
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            // We'll get to this one later...
             throw new NotImplementedException();
         }
     }

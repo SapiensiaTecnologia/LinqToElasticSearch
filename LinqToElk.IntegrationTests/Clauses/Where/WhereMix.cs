@@ -1,13 +1,13 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using AutoFixture;
 using FluentAssertions;
 using Xunit;
 
-namespace LinqToElk.IntegrationTests.Clauses
+namespace LinqToElk.IntegrationTests.Clauses.Where
 {
-    public class WhereClauseTests: IntegrationTestsBase<SampleData>
+    public class WhereMix: IntegrationTestsBase<SampleData>
     {
+       
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -40,27 +40,6 @@ namespace LinqToElk.IntegrationTests.Clauses
             //Then
             listResults.Count.Should().Be(1);
             listResults[0].Name.Should().Be(datas[1].Name);
-        }
-        
-        [Fact]
-        public void WhereDate()
-        {
-            //Given
-            var datas = Fixture.CreateMany<SampleData>().ToList();
-
-            datas[1].Date = DateTime.Now;
-            
-            Bulk(datas);
-
-            ElasticClient.Indices.Refresh();
-            
-            //When
-            var results = Sut.Where(x => x.Name.Contains("4567") && x.Age == 23);
-            var listResults = results.ToList();
-
-            //Then
-            listResults.Count.Should().Be(1);
-            listResults[0].Name.Should().Be(datas[1].Name);
-        }
+        } 
     }
 }

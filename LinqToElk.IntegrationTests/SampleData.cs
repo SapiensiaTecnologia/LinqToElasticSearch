@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LinqToElk
+namespace LinqToElk.IntegrationTests
 {
     public class SampleData
     {
