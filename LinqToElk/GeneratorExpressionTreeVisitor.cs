@@ -78,6 +78,24 @@ namespace LinqToElk
             double.TryParse(Value.ToString(), out var doubleValue);
             switch (expressionType)
             {
+                case ExpressionType.Equal:
+                    _queryContainers.Add(new TermQuery()
+                    {
+                        Field = Property,
+                        Value = doubleValue
+                    });
+                    break;
+                
+                case ExpressionType.NotEqual:
+                    _queryContainers.Add(new BoolQuery()
+                    {
+                        MustNot =new QueryContainer[]{ new TermQuery()
+                        {
+                            Field = Property,
+                            Value = doubleValue
+                        }}
+                    } );
+                    break;
                 case ExpressionType.GreaterThan:
                     _queryContainers.Add(new NumericRangeQuery()
                     {
@@ -108,25 +126,6 @@ namespace LinqToElk
                         Field = Property,
                         LessThanOrEqualTo = doubleValue
                     });
-                    break;
-                
-                case ExpressionType.Equal:
-                    _queryContainers.Add(new TermQuery()
-                    {
-                        Field = Property,
-                        Value = doubleValue
-                    });
-                    break;
-                
-                case ExpressionType.NotEqual:
-                    _queryContainers.Add(new BoolQuery()
-                    {
-                        MustNot =new QueryContainer[]{ new TermQuery()
-                        {
-                            Field = Property,
-                            Value = doubleValue
-                        }}
-                    } );
                     break;
             }
         }
