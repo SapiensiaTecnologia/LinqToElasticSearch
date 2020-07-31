@@ -29,10 +29,9 @@ namespace LinqToElk.IntegrationTests.Clauses
             //Then
             listResults.Count.Should().Be(1);
             listResults[0].Name.Should().Be(data.Name);
-            listResults[0].Description.Should().Be(data.Description);
         }
 
-        [Fact] public void SelectTwoObject()
+        [Fact] public void SelectObjects()
         {
             //Given
             var datas = Fixture.CreateMany<SampleData>();

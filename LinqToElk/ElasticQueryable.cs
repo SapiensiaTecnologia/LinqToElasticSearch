@@ -6,13 +6,6 @@ using Remotion.Linq.Parsing.Structure;
 
 namespace LinqToElk
 {
-    // The item type that our data source will return.
-    public class SampleData
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-    }
-
     public class ElasticQueryable<T> : QueryableBase<T> where T : class
     {
         public ElasticQueryable(ElasticClient elasticClient, string dataId)

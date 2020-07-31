@@ -9,10 +9,10 @@ namespace LinqToElk
 {
     public class GeneratorExpressionTreeVisitor : ThrowingExpressionVisitor
     {
-        private static IList<QueryContainer> _queryContainers = new List<QueryContainer>();
+        private IList<QueryContainer> _queryContainers = new List<QueryContainer>();
 
         public string Property { get; set; }
-        public string Value { get; set; }
+        public object Value { get; set; }
 
         public static List<QueryContainer> GetNestExpression(Expression linqExpression)
         {
@@ -23,75 +23,122 @@ namespace LinqToElk
 
         protected override Expression VisitBinary(BinaryExpression expression)
         {
-            // _hqlExpression.Append("(");
-            //
             Visit(expression.Left);
-            //
-            // // In production code, handle this via lookup tables.
-            // switch (expression.NodeType)
-            // {
-            //     case ExpressionType.Equal:
-            //         _hqlExpression.Append(" = ");
-            //         break;
-            //
-            //     case ExpressionType.AndAlso:
-            //     case ExpressionType.And:
-            //         _hqlExpression.Append(" and ");
-            //         break;
-            //
-            //     case ExpressionType.OrElse:
-            //     case ExpressionType.Or:
-            //         _hqlExpression.Append(" or ");
-            //         break;
-            //
-            //     case ExpressionType.Add:
-            //         _hqlExpression.Append(" + ");
-            //         break;
-            //
-            //     case ExpressionType.Subtract:
-            //         _hqlExpression.Append(" - ");
-            //         break;
-            //
-            //     case ExpressionType.Multiply:
-            //         _hqlExpression.Append(" * ");
-            //         break;
-            //
-            //     case ExpressionType.Divide:
-            //         _hqlExpression.Append(" / ");
-            //         break;
-            //
-            //     default:
-            //         base.VisitBinaryExpression(expression);
-            //         break;
-            // }
-            //
             Visit(expression.Right);
-            // _hqlExpression.Append (")");
-            //
+            
+            switch (Value)
+            {
+                case DateTime _:
+                    VisitDateProperty(expression.NodeType);
+                    break;
+                case bool _:
+                    VisitBoolProperty(expression.NodeType);
+                    break;
+                case int _:
+                case long _:
+                case float _:
+                case double _:
+                case decimal _:
+                    VisitNumericProperty(expression.NodeType);
+                    break;
+                case string _:
+                    VisitStringProperty(expression.NodeType);
+                    break;
+            }
+            
+            return expression;
+        }
 
-
-            if (expression.NodeType == ExpressionType.Equal)
+        private void VisitStringProperty(ExpressionType expressionType)
+        {
+            if (expressionType == ExpressionType.Equal)
             {
                 _queryContainers.Add(new MatchPhraseQuery()
                 {
                     Field = $"{Property}.keyword",
-                    Query = Value
+                    Query = (string) Value
                 });
             }
             
-            if (expression.NodeType == ExpressionType.NotEqual)
+            if (expressionType == ExpressionType.NotEqual)
             {
                 _queryContainers.Add(new BoolQuery()
                 {
                     MustNot =new QueryContainer[]{ new MatchPhraseQuery()
                     {
                         Field = $"{Property}.keyword",
-                        Query = Value
+                        Query = (string) Value
                     }}
                 } );
             }
-            
-            return expression;
+        }
+
+        private void VisitNumericProperty(ExpressionType expressionType)
+        {
+            double.TryParse(Value.ToString(), out var doubleValue);
+            switch (expressionType)
+            {
+                case ExpressionType.GreaterThan:
+                    _queryContainers.Add(new NumericRangeQuery()
+                    {
+                        Field = Property,
+                        GreaterThan = doubleValue
+                    });
+                    break;
+                
+                case ExpressionType.GreaterThanOrEqual:
+                    _queryContainers.Add(new NumericRangeQuery()
+                    {
+                        Field = Property,
+                        GreaterThanOrEqualTo = doubleValue
+                    });
+                    break;
+                
+                case ExpressionType.LessThan:
+                    _queryContainers.Add(new NumericRangeQuery()
+                    {
+                        Field = Property,
+                        LessThan = doubleValue
+                    });
+                    break;
+                
+                case ExpressionType.LessThanOrEqual:
+                    _queryContainers.Add(new NumericRangeQuery()
+                    {
+                        Field = Property,
+                        LessThanOrEqualTo = doubleValue
+                    });
+                    break;
+                
+                case ExpressionType.Equal:
+                    _queryContainers.Add(new TermQuery()
+                    {
+                        Field = Property,
+                        Value = doubleValue
+                    });
+                    break;
+                
+                case ExpressionType.NotEqual:
+                    _queryContainers.Add(new BoolQuery()
+                    {
+                        MustNot =new QueryContainer[]{ new TermQuery()
+                        {
+                            Field = Property,
+                            Value = doubleValue
+                        }}
+                    } );
+                    break;
+            }
+        }
+
+        private void VisitBoolProperty(ExpressionType expressionNodeType)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void VisitDateProperty(ExpressionType expressionNodeType)
+        {
+            throw new NotImplementedException();
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression expression)
@@ -99,29 +146,10 @@ namespace LinqToElk
             // In production code, handle this via method lookup tables.
             if (expression.Method.Name ==  "Contains")
             {
-
                 Visit(expression.Object);
                 Visit(expression.Arguments[0]);
 
                 
-                // if (tokens.Length == 1)
-                // {
-                //     _queryContainers.Add(new QueryStringQuery()
-                //     {
-                //         Fields=  new[]{ Property },
-                //         Query = "*" + Value + "*"
-                //     });
-                // }
-                // else
-                // {
-                //     _queryContainers.Add(new MultiMatchQuery()
-                //     {
-                //         Fields = new[]{ Property },
-                //         Type = TextQueryType.PhrasePrefix,
-                //         Query = Value,
-                //         MaxExpansions = 200
-                //     });
-                // }
                 _queryContainers.Add(new QueryStringQuery()
                 {
                     Fields=  new[]{ Property },
@@ -137,7 +165,16 @@ namespace LinqToElk
 
         protected override Expression VisitConstant(ConstantExpression expression)
         {
-            Value = (string) expression.Value;
+            if (expression.Value is string stringValue)
+            {
+                Value = stringValue;
+            }
+
+            if (expression.Value is int intValue)
+            {
+                Value = intValue;
+            }
+            
             return expression;
         }
         

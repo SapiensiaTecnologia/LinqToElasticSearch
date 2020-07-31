@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using AutoFixture;
 using LinqToElk.IntegrationTests.Utils;
 using Nest;
 
 namespace LinqToElk.IntegrationTests
 {
-    public abstract class IntegrationTestsBase<T> where T : class
+    public abstract class IntegrationTestsBase<T>: IDisposable where T : class 
     {
         protected readonly ElasticClient ElasticClient;
         protected ElasticQueryable<T> Sut;
@@ -35,6 +36,12 @@ namespace LinqToElk.IntegrationTests
         protected void Index(T data)
         {
             ElasticClient.Index(data, descriptor => descriptor.Index(DataId));
+        }
+
+
+        public void Dispose()
+        {
+            ElasticClient.Indices.Delete(DataId); 
         }
     }
 }

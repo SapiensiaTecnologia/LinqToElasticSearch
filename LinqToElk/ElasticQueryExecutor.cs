@@ -21,7 +21,6 @@ namespace LinqToElk
         {
             var queryContainers = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
-
             var documents= _elasticClient.Search<U>(descriptor =>
             {
                 descriptor.Index(_dataId);
