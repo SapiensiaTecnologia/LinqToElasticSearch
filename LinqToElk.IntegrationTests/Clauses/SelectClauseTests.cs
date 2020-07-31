@@ -7,11 +7,6 @@ namespace LinqToElk.IntegrationTests.Clauses
 {
     public class SelectClauseTests: IntegrationTestsBase<SampleData>
     {
-        public SelectClauseTests()
-        {
-            Sut = new ElasticQueryable<SampleData>(ElasticClient, DataId);
-        }
-        
         [Fact]
         public void SelectOneObject()
         {

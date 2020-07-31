@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq.Expressions;
 using Nest;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
@@ -22,7 +21,7 @@ namespace LinqToElk
             queryModel.SelectClause.Accept (this, queryModel);
             queryModel.MainFromClause.Accept (this, queryModel);
             VisitBodyClauses (queryModel.BodyClauses, queryModel);
-            // VisitResultOperators (queryModel.ResultOperators, queryModel);
+            VisitResultOperators (queryModel.ResultOperators, queryModel);
         }
 
         public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
