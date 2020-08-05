@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using LinqToElk.Extensions;
 using Nest;
+using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Parsing;
 
 namespace LinqToElk
@@ -13,6 +15,7 @@ namespace LinqToElk
 
         public string Property { get; set; }
         public object Value { get; set; }
+        public ExpressionType? NodeType { get; set; }
 
         public static List<QueryContainer> GetNestExpression(Expression linqExpression)
         {
@@ -23,6 +26,8 @@ namespace LinqToElk
 
         protected override Expression VisitBinary(BinaryExpression expression)
         {
+            NodeType = expression.NodeType;
+
             Visit(expression.Left);
             Visit(expression.Right);
             
@@ -48,6 +53,7 @@ namespace LinqToElk
             
             return expression;
         }
+
 
         private void VisitStringProperty(ExpressionType expressionType)
         {
@@ -84,6 +90,11 @@ namespace LinqToElk
                         Field = Property,
                         Value = doubleValue
                     });
+                    // _queryContainers.Add(new MatchQuery()
+                    // {
+                    //     Field = Property,
+                    //     Query = doubleValue.ToString()
+                    // });
                     break;
                 
                 case ExpressionType.NotEqual:
@@ -129,15 +140,97 @@ namespace LinqToElk
                     break;
             }
         }
+        private void VisitEnumProperty(ExpressionType expressionType)
+        {
+            switch (expressionType)
+            {
+                case ExpressionType.Equal:
+                    _queryContainers.Add(new MatchQuery()
+                    {
+                        Field = Property,
+                        Query = Value.ToString()
+                    });
+                    break;
+            }
+        }
 
         private void VisitBoolProperty(ExpressionType expressionNodeType)
         {
-            throw new NotImplementedException();
+            if (Value is bool boolValue)
+                switch (expressionNodeType)
+                {
+                    case ExpressionType.Equal:
+                        _queryContainers.Add(new TermQuery()
+                        {
+                            Field = Property,
+                            Value = boolValue
+                        });
+                        break;
+                    case ExpressionType.NotEqual:
+                    case ExpressionType.Not:
+                        _queryContainers.Add(new TermQuery()
+                        {
+                            Field = Property,
+                            Value = !boolValue
+                        }); 
+                        break;
+                }
         }
 
         private void VisitDateProperty(ExpressionType expressionNodeType)
         {
-            throw new NotImplementedException();
+
+            if (Value is DateTime dateTime)
+                switch (expressionNodeType)
+                {
+                    case ExpressionType.GreaterThan:
+                        _queryContainers.Add(new DateRangeQuery()
+                        {
+                            Field = Property,
+                            GreaterThan = dateTime
+                        });
+                        break;
+                    case ExpressionType.GreaterThanOrEqual:
+                        _queryContainers.Add(new DateRangeQuery()
+                        {
+                            Field = Property,
+                            GreaterThanOrEqualTo = dateTime
+                        });
+                        break;
+                    case ExpressionType.LessThan:
+                        _queryContainers.Add(new DateRangeQuery()
+                        {
+                            Field = Property,
+                            LessThan = dateTime
+                        });
+                        break;
+                    case ExpressionType.LessThanOrEqual:
+                        _queryContainers.Add(new DateRangeQuery()
+                        {
+                            Field = Property,
+                            LessThanOrEqualTo = dateTime
+                        });
+                        break;
+                    case ExpressionType.Equal:
+                        _queryContainers.Add(new DateRangeQuery()
+                        {
+                            Field = Property,
+                            GreaterThanOrEqualTo = dateTime,
+                            LessThanOrEqualTo = dateTime 
+                        });
+                        break;
+                    case ExpressionType.NotEqual:
+                        _queryContainers.Add(new BoolQuery()
+                        {
+                            MustNot =new QueryContainer[]{ new DateRangeQuery()
+                            {
+                                Field = Property,
+                                GreaterThanOrEqualTo = dateTime,
+                                LessThanOrEqualTo = dateTime 
+                            }}
+                        } );
+                        break;
+                } 
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression expression)
@@ -162,6 +255,21 @@ namespace LinqToElk
             }
         }
 
+        protected override Expression VisitUnary(UnaryExpression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Not:
+                    Value = false;
+                    break;
+            }
+            Visit(expression.Operand);
+            
+            // VisitBoolProperty(expression.NodeType);
+        
+            return expression;
+        }
+
         protected override Expression VisitConstant(ConstantExpression expression)
         {
             if (expression.Value is string stringValue)
@@ -174,15 +282,38 @@ namespace LinqToElk
                 Value = intValue;
             }
             
+            if (expression.Value is DateTime dateTime)
+            {
+                Value = dateTime;
+            }
+            
+            if (expression.Value is bool boolValue)
+            {
+                Value = boolValue;
+            }
+            
             return expression;
         }
         
         protected override Expression VisitMember(MemberExpression expression)
         {
-            Property = expression.Member.Name.ToLower();
+            Property = expression.Member.Name.ToLowerFirstChar();
+
+            if (expression.Type == typeof(bool))
+            {
+                if (!(Value is bool))
+                {
+                    Value = true;
+                }
+
+                if (NodeType == null)
+                {
+                    VisitBoolProperty(ExpressionType.Equal);
+                }
+            }
+            
             return expression;
         }
-
 
         public List<QueryContainer> GetNestExpression()
         {

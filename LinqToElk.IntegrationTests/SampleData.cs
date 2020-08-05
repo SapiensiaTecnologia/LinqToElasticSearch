@@ -9,7 +9,9 @@ namespace LinqToElk.IntegrationTests
 
         public DateTime Date { get; set; }
         
-        public SampleType SampleType { get; set; }
+        public SampleType SampleTypeProperty { get; set; }
+        
+        public bool Can { get; set; }
     }
 
     public enum SampleType
