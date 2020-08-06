@@ -12,7 +12,7 @@ namespace LinqToElk
     public class GeneratorExpressionTreeVisitor : ThrowingExpressionVisitor
     {
         private IList<QueryContainer> _queryContainers = new List<QueryContainer>();
-
+        public bool Not { get; set; }
         public string Property { get; set; }
         public object Value { get; set; }
         public ExpressionType? NodeType { get; set; }
@@ -179,7 +179,6 @@ namespace LinqToElk
 
         private void VisitDateProperty(ExpressionType expressionNodeType)
         {
-
             if (Value is DateTime dateTime)
                 switch (expressionNodeType)
                 {
@@ -228,51 +227,80 @@ namespace LinqToElk
                                 GreaterThanOrEqualTo = dateTime,
                                 LessThanOrEqualTo = dateTime 
                             }}
-                        } );
+                        });
+                        break;
+                    case ExpressionType.OrElse:
+                        var qc = (new BoolQuery()
+                        {
+                            Should = new QueryContainer[]{ _queryContainers[0], _queryContainers[1]}
+                        }); 
+                        _queryContainers.Clear();
+                        _queryContainers.Add(qc);
                         break;
                 } 
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
+            // In production code, handle this via method lookup tables.
+            QueryStringQuery query;
             switch (expression.Method.Name)
             {
-                // In production code, handle this via method lookup tables.
                 case "ToLower":
-                    // if (Value is string value)
-                    //     Value = value.ToLower();
-                
-                    return expression;
+                    Visit(expression.Object);
+                    break;
                 case "Contains":
                     Visit(expression.Object);
                     Visit(expression.Arguments[0]);
-                    _queryContainers.Add(new QueryStringQuery()
+                    query = (new QueryStringQuery()
                     {
                         Fields=  new[]{ Property },
                         Query = "*" + Value + "*"
                     });
-                    return expression;
+                    AddQueryContainer(query);
+                    break;
                 case "StartsWith":
                     Visit(expression.Object);
                     Visit(expression.Arguments[0]);
-                    _queryContainers.Add(new QueryStringQuery()
+                    query = (new QueryStringQuery()
                     {
                         Fields=  new[]{ Property },
                         Query = Value + "*"
                     });
-                    return expression;
+                    AddQueryContainer(query);
+                    break;
                 case "EndsWith":
                     Visit(expression.Object);
                     Visit(expression.Arguments[0]);
-                    _queryContainers.Add(new QueryStringQuery()
+                    query = (new QueryStringQuery()
                     {
                         Fields=  new[]{ Property },
                         Query = "*" + Value
                     });
-                    return expression;
+                    AddQueryContainer(query);
+                    break;
                 default:
                     return base.VisitMethodCall(expression); // throws
             }
+            
+            return expression;
+        }
+
+        private void AddQueryContainer(QueryContainer query)
+        {
+            if (query != null) 
+                if (Not)
+                {
+                    _queryContainers.Add(new BoolQuery()
+                    {
+                        MustNot = new[]{query}
+                    });
+                    Not = false;
+                }
+                else
+                {
+                    _queryContainers.Add(query);
+                }
         }
 
         protected override Expression VisitUnary(UnaryExpression expression)
@@ -280,6 +308,7 @@ namespace LinqToElk
             switch (expression.NodeType)
             {
                 case ExpressionType.Not:
+                    Not = true;
                     Value = false;
                     break;
             }
@@ -290,8 +319,10 @@ namespace LinqToElk
             return expression;
         }
 
+
         protected override Expression VisitConstant(ConstantExpression expression)
         {
+            //TODO Test more types
             if (expression.Value is string stringValue)
             {
                 Value = stringValue;
@@ -301,7 +332,27 @@ namespace LinqToElk
             {
                 Value = intValue;
             }
+
+            if (expression.Value is long longValue)
+            {
+                Value = longValue;
+            }
             
+            if (expression.Value is float floatValue)
+            {
+                Value = floatValue;
+            }
+            
+            if (expression.Value is double doubleValue)
+            {
+                Value = doubleValue;
+            }
+            
+            if (expression.Value is decimal decimalValue)
+            {
+                Value = decimalValue;
+            }
+
             if (expression.Value is DateTime dateTime)
             {
                 Value = dateTime;
@@ -317,6 +368,7 @@ namespace LinqToElk
         
         protected override Expression VisitMember(MemberExpression expression)
         {
+            //TODO PascalCase Mode
             Property = expression.Member.Name.ToLowerFirstChar();
 
             if (expression.Type == typeof(bool))

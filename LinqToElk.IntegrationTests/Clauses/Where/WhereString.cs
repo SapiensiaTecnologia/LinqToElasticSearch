@@ -50,6 +50,7 @@ namespace LinqToElk.IntegrationTests.Clauses.Where
             //Given
             var datas = Fixture.CreateMany<SampleData>().ToList();
 
+            datas[0].Name = "abd";
             datas[1].Name = "abcdefgh";
             
             Bulk(datas);
@@ -57,7 +58,7 @@ namespace LinqToElk.IntegrationTests.Clauses.Where
             ElasticClient.Indices.Refresh();
             
             //When
-            var results = Sut.Where(x => x.Name.Contains("defg"));
+            var results = Sut.Where(x => x.Name.Contains("abc"));
             var listResults = results.ToList();
 
             //Then
@@ -84,6 +85,30 @@ namespace LinqToElk.IntegrationTests.Clauses.Where
             //Then
             listResults.Count.Should().Be(1);
             listResults[0].Name.Should().Be(datas[1].Name);
+        }
+        
+        [Fact]
+        public void WhereStringNotContains()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+
+            datas[0].Name = "xxxxxxxx";
+            datas[1].Name = "abcdefgh";
+            datas[2].Name = "yyyyyyyy";
+            
+            Bulk(datas);
+
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => !x.Name.Contains("defg"));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(2);
+            listResults[0].Name.Should().Be(datas[0].Name);
+            listResults[1].Name.Should().Be(datas[2].Name);
         }
         
         [Fact]

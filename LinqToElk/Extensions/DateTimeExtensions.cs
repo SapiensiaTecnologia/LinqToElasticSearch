@@ -4,7 +4,7 @@ namespace LinqToElk.Extensions
 {
     public static class DateTimeExtensions
     {
-        private static readonly TimeSpan FullDayTime=TimeSpan.FromDays(1).Subtract(TimeSpan.FromTicks(1));
+        private static readonly TimeSpan FullDayTime = TimeSpan.FromDays(1).Subtract(TimeSpan.FromTicks(1));
 
         public static DateTime GetBeginOfDay(this DateTime dateTime)
         {

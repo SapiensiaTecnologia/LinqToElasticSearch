@@ -2,6 +2,7 @@
 using System.Linq;
 using AutoFixture;
 using FluentAssertions;
+using LinqToElk.Extensions;
 using Xunit;
 
 namespace LinqToElk.IntegrationTests.Clauses.Where
@@ -141,6 +142,34 @@ namespace LinqToElk.IntegrationTests.Clauses.Where
             
             //When
             var results = Sut.Where(x => x.Date != date);
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(2);
+            listResults[0].Date.Should().Be(datas[0].Date);
+            listResults[1].Date.Should().Be(datas[2].Date);
+        }
+        
+        [Fact]
+        public void WhereDateNotEqual2()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+            foreach (var data in datas)
+            {
+                data.Date = DateTime.Now.GetBeginOfDay();
+            }
+    
+            var date = DateTime.Now.AddDays(1).GetBeginOfDay();
+            datas[1].Date = date;
+
+            var dateT = date.AddDays(1);
+            
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => x.Date < date || x.Date >= dateT);
             var listResults = results.ToList();
 
             //Then
