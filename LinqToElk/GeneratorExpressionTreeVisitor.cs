@@ -235,23 +235,43 @@ namespace LinqToElk
 
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
-            // In production code, handle this via method lookup tables.
-            if (expression.Method.Name ==  "Contains")
+            switch (expression.Method.Name)
             {
-                Visit(expression.Object);
-                Visit(expression.Arguments[0]);
-
+                // In production code, handle this via method lookup tables.
+                case "ToLower":
+                    // if (Value is string value)
+                    //     Value = value.ToLower();
                 
-                _queryContainers.Add(new QueryStringQuery()
-                {
-                    Fields=  new[]{ Property },
-                    Query = "*" + Value + "*"
-                });
-                return expression;
-            }
-            else
-            {
-                return base.VisitMethodCall(expression); // throws
+                    return expression;
+                case "Contains":
+                    Visit(expression.Object);
+                    Visit(expression.Arguments[0]);
+                    _queryContainers.Add(new QueryStringQuery()
+                    {
+                        Fields=  new[]{ Property },
+                        Query = "*" + Value + "*"
+                    });
+                    return expression;
+                case "StartsWith":
+                    Visit(expression.Object);
+                    Visit(expression.Arguments[0]);
+                    _queryContainers.Add(new QueryStringQuery()
+                    {
+                        Fields=  new[]{ Property },
+                        Query = Value + "*"
+                    });
+                    return expression;
+                case "EndsWith":
+                    Visit(expression.Object);
+                    Visit(expression.Arguments[0]);
+                    _queryContainers.Add(new QueryStringQuery()
+                    {
+                        Fields=  new[]{ Property },
+                        Query = "*" + Value
+                    });
+                    return expression;
+                default:
+                    return base.VisitMethodCall(expression); // throws
             }
         }
 

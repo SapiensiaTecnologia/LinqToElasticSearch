@@ -50,6 +50,49 @@ namespace LinqToElk.IntegrationTests.Clauses.Where
             //Given
             var datas = Fixture.CreateMany<SampleData>().ToList();
 
+            datas[1].Name = "abcdefgh";
+            
+            Bulk(datas);
+
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => x.Name.Contains("defg"));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1);
+            listResults[0].Name.Should().Be(datas[1].Name);
+        }
+        
+        [Fact]
+        public void WhereStringContainsToLower()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+
+            datas[1].Name = "abcdefgh";
+            
+            Bulk(datas);
+
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => x.Name.Contains("DefG".ToLower()));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1);
+            listResults[0].Name.Should().Be(datas[1].Name);
+        }
+        
+        [Fact]
+        public void WhereStringStartWith()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+
+            datas[0].Name = "0123456789";
             datas[1].Name = "123456789";
             
             Bulk(datas);
@@ -57,7 +100,29 @@ namespace LinqToElk.IntegrationTests.Clauses.Where
             ElasticClient.Indices.Refresh();
             
             //When
-            var results = Sut.Where(x => x.Name.Contains("4567"));
+            var results = Sut.Where(x => x.Name.StartsWith("1234"));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1);
+            listResults[0].Name.Should().Be(datas[1].Name);
+        }
+        
+        [Fact]
+        public void WhereStringEndWith()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+
+            datas[0].Name = "123456789";
+            datas[1].Name = "12345678";
+            
+            Bulk(datas);
+
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => x.Name.EndsWith("5678"));
             var listResults = results.ToList();
 
             //Then
