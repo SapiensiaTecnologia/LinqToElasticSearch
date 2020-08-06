@@ -1,19 +1,18 @@
-﻿using System.Collections.Generic;
-using Nest;
+﻿﻿﻿using System.Collections.ObjectModel;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
+using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElk
 {
     public class ElasticGeneratorQueryModelVisitor: QueryModelVisitorBase
     {
-        private List<QueryContainer> _queryContainers = new List<QueryContainer>();
-
-        public static IList<QueryContainer> GenerateElasticQuery(QueryModel queryModel)
+        public QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
+        public static QueryAggregator GenerateElasticQuery(QueryModel queryModel)
         {
             var visitor = new ElasticGeneratorQueryModelVisitor ();
             visitor.VisitQueryModel (queryModel);
-            return visitor._queryContainers;
+            return visitor.QueryAggregator;
         } 
         
         public override void VisitQueryModel (QueryModel queryModel)
@@ -22,6 +21,24 @@ namespace LinqToElk
             queryModel.MainFromClause.Accept (this, queryModel);
             VisitBodyClauses (queryModel.BodyClauses, queryModel);
             VisitResultOperators (queryModel.ResultOperators, queryModel);
+        }
+
+        protected override void VisitResultOperators(ObservableCollection<ResultOperatorBase> resultOperators,
+            QueryModel queryModel)
+        {
+            foreach (var resultOperator in resultOperators)
+            {
+                if (resultOperator is SkipResultOperator skipResultOperator)
+                {
+                    QueryAggregator.Skip = skipResultOperator.GetConstantCount();
+                }
+                
+                if (resultOperator is TakeResultOperator takeResultOperator)
+                {
+                    QueryAggregator.Take = takeResultOperator.GetConstantCount();
+                }
+            }
+            base.VisitResultOperators(resultOperators, queryModel);
         }
 
         public override void VisitSelectClause (SelectClause selectClause, QueryModel queryModel)
@@ -34,7 +51,7 @@ namespace LinqToElk
         public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
         {
             var queryContainers = GeneratorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate);
-            _queryContainers.AddRange(queryContainers);
+            QueryAggregator.QueryContainers.AddRange(queryContainers);
             base.VisitWhereClause (whereClause, queryModel, index);
         }
         

@@ -5,10 +5,10 @@ using Xunit;
 
 namespace LinqToElk.IntegrationTests.Clauses
 {
-    public class TakeClauseTests: IntegrationTestsBase<SampleData>
+    public class CountClauseTest: IntegrationTestsBase<SampleData>
     {
         [Fact]
-        public void TakeObjects()
+        public void CountObjects()
         {
             //Given
             var datas = Fixture.CreateMany<SampleData>(11);
@@ -18,10 +18,10 @@ namespace LinqToElk.IntegrationTests.Clauses
             ElasticClient.Indices.Refresh();
             
             //When
-            var results = Sut.Take(5).ToList();
+            var results = Sut.Count();
 
             //Then
-            results.Count().Should().Be(5);
+            results.Should().Be(11);
         }
     }
 }

@@ -1,8 +1,11 @@
-﻿using System;
+﻿﻿﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Nest;
 using Remotion.Linq;
+using Remotion.Linq.Clauses;
+using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElk
 {
@@ -19,15 +22,26 @@ namespace LinqToElk
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryContainers = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
+            var queryAggregator = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
             var documents= _elasticClient.Search<TU>(descriptor =>
             {
                 descriptor.Index(_dataId);
-                
-                if (queryContainers.Any())
+
+                if (queryAggregator.Skip != null)
                 {
-                    descriptor.Query(q => q.Bool(x => x.Must(queryContainers.ToArray())));
+                    descriptor.From(queryAggregator.Skip);
+                }
+
+                if (queryAggregator.Take != null)
+                {
+                    descriptor.Take(queryAggregator.Take);
+                }
+                
+                
+                if (queryAggregator.QueryContainers.Any())
+                {
+                    descriptor.Query(q => q.Bool(x => x.Must(queryAggregator.QueryContainers.ToArray())));
                 }
                 else
                 {
@@ -46,9 +60,35 @@ namespace LinqToElk
             return returnDefaultWhenEmpty ? sequence.SingleOrDefault() : sequence.Single();
         }
 
-        public T ExecuteScalar<T>(QueryModel queryModel)
+        public T ExecuteScalar<T>(QueryModel queryModel)                
         {
-            throw new NotImplementedException();
+            var queryAggregator = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
+
+            long result = 0;
+
+            foreach (var resultOperator in queryModel.ResultOperators)
+            {
+                if (resultOperator is CountResultOperator)
+                {
+                    result = _elasticClient.Count<TU>(descriptor =>
+                    {
+                        descriptor.Index(_dataId);
+                    
+                        if (queryAggregator.QueryContainers.Any())
+                        {
+                            descriptor.Query(q => q.Bool(x => x.Must(queryAggregator.QueryContainers.ToArray())));
+                        }
+                        return descriptor;
+                    }).Count;
+                }
+            }
+            
+            var converter = TypeDescriptor.GetConverter(typeof(T));
+            if (converter.CanConvertFrom(typeof(string)))
+            {
+                return (T)converter.ConvertFromString(result.ToString());
+            }
+            return default(T);
         }
     }
 }
