@@ -4,7 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using LinqToElk.Extensions;
 using Nest;
-using Remotion.Linq.Parsing;
+  using Remotion.Linq;
+  using Remotion.Linq.Clauses;
+  using Remotion.Linq.Parsing;
 
 namespace LinqToElk
 {
@@ -313,8 +315,6 @@ namespace LinqToElk
             }
             Visit(expression.Operand);
             
-            // VisitBoolProperty(expression.NodeType);
-        
             return expression;
         }
 

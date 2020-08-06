@@ -29,7 +29,7 @@ namespace LinqToElk.IntegrationTests.Clauses
         [Fact] public void SelectObjects()
         {
             //Given
-            var datas = Fixture.CreateMany<SampleData>();
+            var datas = Fixture.CreateMany<SampleData>(15);
 
             Bulk(datas);
             
@@ -40,7 +40,7 @@ namespace LinqToElk.IntegrationTests.Clauses
             var listResults = results.ToList();
 
             //Then
-            listResults.Count.Should().Be(3);
+            listResults.Count.Should().Be(15);
         }
     }
 }

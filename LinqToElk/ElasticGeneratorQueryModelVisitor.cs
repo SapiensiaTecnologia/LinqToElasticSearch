@@ -1,4 +1,6 @@
 ﻿﻿﻿using System.Collections.ObjectModel;
+using System.Linq;
+using System.Linq.Expressions;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
@@ -11,16 +13,16 @@ namespace LinqToElk
         public static QueryAggregator GenerateElasticQuery(QueryModel queryModel)
         {
             var visitor = new ElasticGeneratorQueryModelVisitor ();
-            visitor.VisitQueryModel (queryModel);
+            visitor.VisitQueryModel(queryModel);
             return visitor.QueryAggregator;
         } 
         
         public override void VisitQueryModel (QueryModel queryModel)
         {
-            queryModel.SelectClause.Accept (this, queryModel);
-            queryModel.MainFromClause.Accept (this, queryModel);
-            VisitBodyClauses (queryModel.BodyClauses, queryModel);
-            VisitResultOperators (queryModel.ResultOperators, queryModel);
+            queryModel.SelectClause.Accept(this, queryModel);
+            queryModel.MainFromClause.Accept(this, queryModel);
+            VisitBodyClauses(queryModel.BodyClauses, queryModel);
+            VisitResultOperators(queryModel.ResultOperators, queryModel);
         }
 
         protected override void VisitResultOperators(ObservableCollection<ResultOperatorBase> resultOperators,
@@ -40,6 +42,13 @@ namespace LinqToElk
             }
             base.VisitResultOperators(resultOperators, queryModel);
         }
+        
+        public override void VisitMainFromClause (MainFromClause fromClause, QueryModel queryModel)
+        {
+            // _queryParts.AddFromPart (fromClause);
+
+            base.VisitMainFromClause (fromClause, queryModel);
+        }
 
         public override void VisitSelectClause (SelectClause selectClause, QueryModel queryModel)
         {
@@ -57,8 +66,17 @@ namespace LinqToElk
         
         public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)
         {
-            // var queryContainers = orderByClause.Orderings.SelectMany(o => GeneratorExpressionTreeVisitor.GetNestExpression((o.Expression)));
-            // _queryContainers.AddRange(queryContainers);
+            var queryContainers = orderByClause.Orderings.SelectMany(o => GeneratorExpressionTreeVisitor.GetNestExpression((o.Expression)));
+            QueryAggregator.QueryContainers.AddRange(queryContainers);
+            
+            if (orderByClause.Orderings[0].Expression is MemberExpression  memberExpression)
+            {
+                
+                var direction = orderByClause.Orderings[0].OrderingDirection;
+                var property = memberExpression.Member.Name;
+                QueryAggregator.OrderBy = new OrderProperties(property, direction);
+
+            }
             base.VisitOrderByClause (orderByClause, queryModel, index);
         }
     }

@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using Nest;
+  using LinqToElk.Extensions;
+  using Nest;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
@@ -22,20 +23,27 @@ namespace LinqToElk
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
+            
             var queryAggregator = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
             var documents= _elasticClient.Search<TU>(descriptor =>
             {
                 descriptor.Index(_dataId);
 
+
                 if (queryAggregator.Skip != null)
                 {
                     descriptor.From(queryAggregator.Skip);
+                }
+                else
+                {
+                    descriptor.Size(10000);
                 }
 
                 if (queryAggregator.Take != null)
                 {
                     descriptor.Take(queryAggregator.Take);
+                    descriptor.Size(queryAggregator.Take);
                 }
                 
                 if (queryAggregator.QueryContainers.Any())
@@ -46,7 +54,24 @@ namespace LinqToElk
                 {
                     descriptor.MatchAll();
                 }
+                
+                
+            
+                if (queryAggregator.OrderBy.OrderingDirection == OrderingDirection.Asc)
+                {
+                    //TODO pascal mode
+                    descriptor.Sort(d => d.Ascending(new Field(queryAggregator.OrderBy.Property.ToLowerFirstChar() 
+                                                               // +  ".keyword"
+                    )));
+                }
+                else
+                {
+                    //TODO pascal mode
+                    descriptor.Sort(d => d.Descending(new Field(queryAggregator.OrderBy.Property.ToLowerFirstChar() +  ".keyword")));
+                }
+                
                 return descriptor;
+
             }).Documents;
 
             return (IEnumerable<T>) documents;
@@ -63,13 +88,11 @@ namespace LinqToElk
         {
             var queryAggregator = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
 
-            long result = 0;
-
             foreach (var resultOperator in queryModel.ResultOperators)
             {
                 if (resultOperator is CountResultOperator)
                 {
-                    result = _elasticClient.Count<TU>(descriptor =>
+                    var result = _elasticClient.Count<TU>(descriptor =>
                     {
                         descriptor.Index(_dataId);
                     
@@ -79,14 +102,15 @@ namespace LinqToElk
                         }
                         return descriptor;
                     }).Count;
+            
+                    var converter = TypeDescriptor.GetConverter(typeof(T));
+                    if (converter.CanConvertFrom(typeof(string)))
+                    {
+                        return (T)converter.ConvertFromString(result.ToString());
+                    }
                 }
             }
             
-            var converter = TypeDescriptor.GetConverter(typeof(T));
-            if (converter.CanConvertFrom(typeof(string)))
-            {
-                return (T)converter.ConvertFromString(result.ToString());
-            }
             return default(T);
         }
     }
