@@ -5,7 +5,7 @@ using Xunit;
 
 namespace LinqToElk.IntegrationTests.Clauses.Where
 {
-    public class WhereBool: IntegrationTestsBase<SampleData>
+    public class WhereBoolTests: IntegrationTestsBase<SampleData>
     {
         [Fact]
         public void WhereDateEqualImplicit()

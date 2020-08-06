@@ -7,7 +7,7 @@ using Xunit;
 
 namespace LinqToElk.IntegrationTests.Clauses.Where
 {
-    public class WhereDate: IntegrationTestsBase<SampleData>
+    public class WhereDateTests: IntegrationTestsBase<SampleData>
     {
         [Fact]
         public void WhereDateGreaterThan()

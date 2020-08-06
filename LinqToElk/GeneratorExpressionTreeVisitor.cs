@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using LinqToElk.Extensions;
 using Nest;
-using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Parsing;
 
 namespace LinqToElk
@@ -232,7 +231,7 @@ namespace LinqToElk
                     case ExpressionType.OrElse:
                         var qc = (new BoolQuery()
                         {
-                            Should = new QueryContainer[]{ _queryContainers[0], _queryContainers[1]}
+                            Should = new[]{ _queryContainers[0], _queryContainers[1]}
                         }); 
                         _queryContainers.Clear();
                         _queryContainers.Add(qc);

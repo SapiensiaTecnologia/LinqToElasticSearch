@@ -5,7 +5,7 @@ using Xunit;
 
 namespace LinqToElk.IntegrationTests.Clauses.Where
 {
-    public class WhereEnum: IntegrationTestsBase<SampleData>
+    public class WhereEnumTests: IntegrationTestsBase<SampleData>
     {
         [Fact]
         public void WhereEnumEqual()

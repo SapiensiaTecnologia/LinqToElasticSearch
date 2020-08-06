@@ -5,7 +5,7 @@ using Xunit;
 
 namespace LinqToElk.IntegrationTests.Clauses.Where
 {
-    public class WhereString: IntegrationTestsBase<SampleData>
+    public class WhereStringTests: IntegrationTestsBase<SampleData>
     {
         [Fact]
         public void WhereStringEqual()

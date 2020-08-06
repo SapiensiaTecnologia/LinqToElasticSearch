@@ -19,8 +19,4 @@
       <ProjectReference Include="..\LinqToElk\LinqToElk.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Clauses\Select" />
-    </ItemGroup>
-
 </Project>
