@@ -11,10 +11,10 @@ namespace LinqToElk
 {
     public class ElasticQueryExecutor<TU> : IQueryExecutor where TU : class
     {
-        private readonly ElasticClient _elasticClient;
+        private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
 
-        public ElasticQueryExecutor(ElasticClient elasticClient, string dataId)
+        public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
             _elasticClient = elasticClient;
             _dataId = dataId;
@@ -37,7 +37,6 @@ namespace LinqToElk
                 {
                     descriptor.Take(queryAggregator.Take);
                 }
-                
                 
                 if (queryAggregator.QueryContainers.Any())
                 {

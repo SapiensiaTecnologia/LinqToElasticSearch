@@ -8,7 +8,7 @@ namespace LinqToElk
 {
     public class ElasticQueryable<T> : QueryableBase<T> where T : class
     {
-        public ElasticQueryable(ElasticClient elasticClient, string dataId)
+        public ElasticQueryable(IElasticClient elasticClient, string dataId)
             : base(new DefaultQueryProvider(typeof(ElasticQueryable<>), QueryParser.CreateDefault(), new ElasticQueryExecutor<T>(elasticClient, dataId)))
         {
         }
