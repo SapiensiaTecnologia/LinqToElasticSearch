@@ -67,7 +67,9 @@ namespace LinqToElk
                 else
                 {
                     //TODO pascal mode
-                    descriptor.Sort(d => d.Descending(new Field(queryAggregator.OrderBy.Property.ToLowerFirstChar() +  ".keyword")));
+                    descriptor.Sort(d => d.Descending(new Field(queryAggregator.OrderBy.Property.ToLowerFirstChar() 
+                                                                // + ".keyword"
+                                                                )));
                 }
                 
                 return descriptor;
