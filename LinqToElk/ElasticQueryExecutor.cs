@@ -1,9 +1,7 @@
-﻿﻿﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-  using LinqToElk.Extensions;
-  using Nest;
+using Nest;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
@@ -15,18 +13,20 @@ namespace LinqToElk
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
+        private ElasticGeneratorQueryModelVisitor _elasticGeneratorQueryModelVisitor;
 
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
             _elasticClient = elasticClient;
             _dataId = dataId;
             _propertyNameInferrerParser = new PropertyNameInferrerParser(_elasticClient);
+            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor(_propertyNameInferrerParser);
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
             
-            var queryAggregator = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel, _propertyNameInferrerParser);
+            var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
             var documents= _elasticClient.Search<TU>(descriptor =>
             {
@@ -92,7 +92,7 @@ namespace LinqToElk
 
         public T ExecuteScalar<T>(QueryModel queryModel)                
         {
-            var queryAggregator = ElasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel, _propertyNameInferrerParser);
+            var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
 
             foreach (var resultOperator in queryModel.ResultOperators)
             {

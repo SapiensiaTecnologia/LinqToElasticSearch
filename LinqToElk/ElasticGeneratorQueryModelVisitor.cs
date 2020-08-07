@@ -10,19 +10,18 @@ namespace LinqToElk
     public class ElasticGeneratorQueryModelVisitor: QueryModelVisitorBase
     {
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
-        public QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
+        private QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
 
-        private ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
+        public ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
             _propertyNameInferrerParser = propertyNameInferrerParser;
         }
 
-        public static QueryAggregator GenerateElasticQuery(QueryModel queryModel,
-            PropertyNameInferrerParser propertyNameInferrerParser)
+        public QueryAggregator GenerateElasticQuery(QueryModel queryModel)
         {
-            var visitor = new ElasticGeneratorQueryModelVisitor (propertyNameInferrerParser);
-            visitor.VisitQueryModel(queryModel);
-            return visitor.QueryAggregator;
+            QueryAggregator = new QueryAggregator();
+            VisitQueryModel(queryModel);
+            return QueryAggregator;
         } 
         
         public override void VisitQueryModel (QueryModel queryModel)
@@ -49,20 +48,6 @@ namespace LinqToElk
                 }
             }
             base.VisitResultOperators(resultOperators, queryModel);
-        }
-        
-        public override void VisitMainFromClause (MainFromClause fromClause, QueryModel queryModel)
-        {
-            // _queryParts.AddFromPart (fromClause);
-
-            base.VisitMainFromClause (fromClause, queryModel);
-        }
-
-        public override void VisitSelectClause (SelectClause selectClause, QueryModel queryModel)
-        {
-            // var queryContainers = GeneratorExpressionTreeVisitor.GetNestExpression(selectClause.Selector);
-            // _queryContainers.AddRange(queryContainers);
-            base.VisitSelectClause (selectClause, queryModel);
         }
         
         public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
