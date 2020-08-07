@@ -5,7 +5,7 @@ using FluentAssertions;
 using LinqToElk.Extensions;
 using Xunit;
 
-namespace LinqToElk.IntegrationTests.Clauses.Where
+namespace LinqToElk.IntegrationTests.Clauses.WhereByTypes
 {
     public class WhereDateTests: IntegrationTestsBase<SampleData>
     {

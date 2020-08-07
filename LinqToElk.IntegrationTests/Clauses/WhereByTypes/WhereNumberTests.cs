@@ -3,7 +3,7 @@ using AutoFixture;
 using FluentAssertions;
 using Xunit;
 
-namespace LinqToElk.IntegrationTests.Clauses.Where
+namespace LinqToElk.IntegrationTests.Clauses.WhereByTypes
 {
     public class WhereNumberTests: IntegrationTestsBase<SampleData>
     {

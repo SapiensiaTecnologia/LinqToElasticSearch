@@ -3,12 +3,11 @@ using AutoFixture;
 using FluentAssertions;
 using Xunit;
 
-namespace LinqToElk.IntegrationTests.Clauses
+namespace LinqToElk.IntegrationTests.Clauses.OrderByTypes
 {
     public class OrderClauseTests: IntegrationTestsBase<SampleData>
     {
-        [Fact]
-        public void OrderAscObjects()
+        public OrderClauseTests()
         {
             //Given
             var datas = Fixture.CreateMany<SampleData>(11).ToList();
@@ -18,14 +17,15 @@ namespace LinqToElk.IntegrationTests.Clauses
                 data.Age = 30;
                 data.Can = true;
             }
-
             datas[7].Age = 23;
             
-
             Bulk(datas);
-            
             ElasticClient.Indices.Refresh();
-            
+        }
+        
+        [Fact]
+        public void OrderAscNumber()
+        {
             //When
             var results = Sut.OrderBy(x => x.Age).ToList();
 
@@ -35,24 +35,8 @@ namespace LinqToElk.IntegrationTests.Clauses
         }
         
         [Fact]
-        public void OrderDescObjects()
+        public void OrderDescNumber()
         {
-            //Given
-            var datas = Fixture.CreateMany<SampleData>(11).ToList();
-
-            foreach (var data in datas)
-            {
-                data.Age = 30;
-                data.Can = true;
-            }
-
-            datas[7].Age = 23;
-            
-
-            Bulk(datas);
-            
-            ElasticClient.Indices.Refresh();
-            
             //When
             var results = Sut.OrderByDescending(x => x.Age).ToList();
 

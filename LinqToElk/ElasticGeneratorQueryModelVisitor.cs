@@ -60,9 +60,6 @@ namespace LinqToElk
         
         public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)
         {
-            var queryContainers = orderByClause.Orderings.SelectMany(o => _generatorExpressionTreeVisitor.GetNestExpression(o.Expression));
-            QueryAggregator.QueryContainers.AddRange(queryContainers);
-            
             if (orderByClause.Orderings[0].Expression is MemberExpression  memberExpression)
             {
                 
