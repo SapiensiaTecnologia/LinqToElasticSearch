@@ -4,23 +4,28 @@ using System.Linq;
 using System.Linq.Expressions;
 using LinqToElk.Extensions;
 using Nest;
-  using Remotion.Linq;
-  using Remotion.Linq.Clauses;
-  using Remotion.Linq.Parsing;
+using Remotion.Linq.Parsing;
 
 namespace LinqToElk
 {
     public class GeneratorExpressionTreeVisitor : ThrowingExpressionVisitor
     {
         private IList<QueryContainer> _queryContainers = new List<QueryContainer>();
+        private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
+
+        private GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
+        {
+            _propertyNameInferrerParser = propertyNameInferrerParser;
+        }
+
         public bool Not { get; set; }
         public string Property { get; set; }
         public object Value { get; set; }
         public ExpressionType? NodeType { get; set; }
 
-        public static List<QueryContainer> GetNestExpression(Expression linqExpression)
+        public static List<QueryContainer> GetNestExpression(Expression linqExpression, PropertyNameInferrerParser propertyNameInferrerParser)
         {
-            var visitor = new GeneratorExpressionTreeVisitor();
+            var visitor = new GeneratorExpressionTreeVisitor(propertyNameInferrerParser);
             visitor.Visit(linqExpression);
             return visitor.GetNestExpression();
         }
@@ -321,54 +326,13 @@ namespace LinqToElk
 
         protected override Expression VisitConstant(ConstantExpression expression)
         {
-            //TODO Test more types
-            if (expression.Value is string stringValue)
-            {
-                Value = stringValue;
-            }
-
-            if (expression.Value is int intValue)
-            {
-                Value = intValue;
-            }
-
-            if (expression.Value is long longValue)
-            {
-                Value = longValue;
-            }
-            
-            if (expression.Value is float floatValue)
-            {
-                Value = floatValue;
-            }
-            
-            if (expression.Value is double doubleValue)
-            {
-                Value = doubleValue;
-            }
-            
-            if (expression.Value is decimal decimalValue)
-            {
-                Value = decimalValue;
-            }
-
-            if (expression.Value is DateTime dateTime)
-            {
-                Value = dateTime;
-            }
-            
-            if (expression.Value is bool boolValue)
-            {
-                Value = boolValue;
-            }
-            
+            Value = expression.Value;
             return expression;
         }
         
         protected override Expression VisitMember(MemberExpression expression)
         {
-            //TODO PascalCase Mode
-            Property = expression.Member.Name.ToLowerFirstChar();
+            Property = _propertyNameInferrerParser.Parser(expression.Member.Name);
 
             if (expression.Type == typeof(bool))
             {

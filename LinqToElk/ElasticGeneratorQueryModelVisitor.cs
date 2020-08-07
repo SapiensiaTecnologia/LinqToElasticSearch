@@ -9,10 +9,18 @@ namespace LinqToElk
 {
     public class ElasticGeneratorQueryModelVisitor: QueryModelVisitorBase
     {
+        private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         public QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
-        public static QueryAggregator GenerateElasticQuery(QueryModel queryModel)
+
+        private ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
-            var visitor = new ElasticGeneratorQueryModelVisitor ();
+            _propertyNameInferrerParser = propertyNameInferrerParser;
+        }
+
+        public static QueryAggregator GenerateElasticQuery(QueryModel queryModel,
+            PropertyNameInferrerParser propertyNameInferrerParser)
+        {
+            var visitor = new ElasticGeneratorQueryModelVisitor (propertyNameInferrerParser);
             visitor.VisitQueryModel(queryModel);
             return visitor.QueryAggregator;
         } 
@@ -59,14 +67,14 @@ namespace LinqToElk
         
         public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
         {
-            var queryContainers = GeneratorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate);
+            var queryContainers = GeneratorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate, _propertyNameInferrerParser);
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             base.VisitWhereClause (whereClause, queryModel, index);
         }
         
         public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)
         {
-            var queryContainers = orderByClause.Orderings.SelectMany(o => GeneratorExpressionTreeVisitor.GetNestExpression((o.Expression)));
+            var queryContainers = orderByClause.Orderings.SelectMany(o => GeneratorExpressionTreeVisitor.GetNestExpression(o.Expression, _propertyNameInferrerParser));
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             
             if (orderByClause.Orderings[0].Expression is MemberExpression  memberExpression)

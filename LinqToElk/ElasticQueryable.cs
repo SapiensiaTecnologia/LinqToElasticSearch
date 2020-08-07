@@ -13,11 +13,6 @@ namespace LinqToElk
         {
         }
 
-        public ElasticQueryable(IQueryParser queryParser, IQueryExecutor executor)
-            : base(new DefaultQueryProvider(typeof(ElasticQueryable<>), queryParser, executor))
-        {
-        }
-
         public ElasticQueryable(IQueryProvider provider, Expression expression)
             : base(provider, expression)
         {
