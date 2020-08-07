@@ -29,31 +29,7 @@ using Nest;
 
         public string GetKeywordIfNecessary()
         {
-            return GetElasticType().ToLowerInvariant() == "text" ? ".keyword" : "";
-        }
-
-        private string GetElasticType()
-        {
-            switch (PropertyType.Name.ToLower())
-            {
-                case "datetime" :
-                case "datetimeoffset" :
-                    return "Date";
-                case "bool":
-                case "boolean":
-                    return "boolean";
-                case "int":
-                case "int32":
-                case "long":
-                case "int64":
-                case "float":
-                case "single":
-                case "decimal":
-                case "double":
-                    return "number";
-                default:
-                    return "Text";
-            }
+            return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
         }
     }
 }
