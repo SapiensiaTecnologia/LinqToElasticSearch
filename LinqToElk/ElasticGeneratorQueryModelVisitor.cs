@@ -1,7 +1,8 @@
 ﻿﻿﻿using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
-using Remotion.Linq;
+  using System.Reflection;
+  using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 
@@ -9,12 +10,12 @@ namespace LinqToElk
 {
     public class ElasticGeneratorQueryModelVisitor: QueryModelVisitorBase
     {
-        private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
+        private GeneratorExpressionTreeVisitor _generatorExpressionTreeVisitor;
         private QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
 
         public ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
-            _propertyNameInferrerParser = propertyNameInferrerParser;
+            _generatorExpressionTreeVisitor = new GeneratorExpressionTreeVisitor(propertyNameInferrerParser);
         }
 
         public QueryAggregator GenerateElasticQuery(QueryModel queryModel)
@@ -52,22 +53,23 @@ namespace LinqToElk
         
         public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
         {
-            var queryContainers = GeneratorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate, _propertyNameInferrerParser);
+            var queryContainers = _generatorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate);
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             base.VisitWhereClause (whereClause, queryModel, index);
         }
         
         public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)
         {
-            var queryContainers = orderByClause.Orderings.SelectMany(o => GeneratorExpressionTreeVisitor.GetNestExpression(o.Expression, _propertyNameInferrerParser));
+            var queryContainers = orderByClause.Orderings.SelectMany(o => _generatorExpressionTreeVisitor.GetNestExpression(o.Expression));
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             
             if (orderByClause.Orderings[0].Expression is MemberExpression  memberExpression)
             {
                 
                 var direction = orderByClause.Orderings[0].OrderingDirection;
-                var property = memberExpression.Member.Name;
-                QueryAggregator.OrderBy = new OrderProperties(property, direction);
+                var propertyName = memberExpression.Member.Name;
+                var type = ((PropertyInfo) memberExpression.Member).PropertyType;
+                QueryAggregator.OrderBy = new OrderProperties(propertyName, type, direction);
 
             }
             base.VisitOrderByClause (orderByClause, queryModel, index);

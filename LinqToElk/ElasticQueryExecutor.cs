@@ -13,7 +13,7 @@ namespace LinqToElk
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
-        private ElasticGeneratorQueryModelVisitor _elasticGeneratorQueryModelVisitor;
+        private readonly ElasticGeneratorQueryModelVisitor _elasticGeneratorQueryModelVisitor;
 
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
@@ -25,7 +25,6 @@ namespace LinqToElk
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            
             var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
             
             var documents= _elasticClient.Search<TU>(descriptor =>
@@ -60,19 +59,14 @@ namespace LinqToElk
 
                 if (queryAggregator.OrderBy != null)
                 {
+                    var property = _propertyNameInferrerParser.Parser(queryAggregator.OrderBy.PropertyName) + queryAggregator.OrderBy.GetKeywordIfNecessary();
                     if (queryAggregator.OrderBy.OrderingDirection == OrderingDirection.Asc)
                     {
-                        var property = _propertyNameInferrerParser.Parser(queryAggregator.OrderBy.Property);
-                        descriptor.Sort(d => d.Ascending(new Field(property 
-                            // +  ".keyword"
-                        )));
+                        descriptor.Sort(d => d.Ascending(new Field(property)));
                     }
                     else
                     {
-                        var property = _propertyNameInferrerParser.Parser(queryAggregator.OrderBy.Property);
-                        descriptor.Sort(d => d.Descending(new Field(property 
-                            // + ".keyword"
-                        )));
+                        descriptor.Sort(d => d.Descending(new Field(property)));
                     }
                 }
                 

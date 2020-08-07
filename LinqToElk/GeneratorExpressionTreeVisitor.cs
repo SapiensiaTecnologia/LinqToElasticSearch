@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using LinqToElk.Extensions;
 using Nest;
 using Remotion.Linq.Parsing;
 
@@ -12,22 +11,20 @@ namespace LinqToElk
     {
         private IList<QueryContainer> _queryContainers = new List<QueryContainer>();
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
+        private bool Not { get; set; }
+        private string Property { get; set; }
+        private object Value { get; set; }
+        private ExpressionType? NodeType { get; set; }
 
-        private GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
+        public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
             _propertyNameInferrerParser = propertyNameInferrerParser;
         }
 
-        public bool Not { get; set; }
-        public string Property { get; set; }
-        public object Value { get; set; }
-        public ExpressionType? NodeType { get; set; }
-
-        public static List<QueryContainer> GetNestExpression(Expression linqExpression, PropertyNameInferrerParser propertyNameInferrerParser)
+        public List<QueryContainer> GetNestExpression(Expression linqExpression)
         {
-            var visitor = new GeneratorExpressionTreeVisitor(propertyNameInferrerParser);
-            visitor.Visit(linqExpression);
-            return visitor.GetNestExpression();
+            Visit(linqExpression);
+            return _queryContainers.ToList();
         }
 
         protected override Expression VisitBinary(BinaryExpression expression)
@@ -349,12 +346,6 @@ namespace LinqToElk
             
             return expression;
         }
-
-        public List<QueryContainer> GetNestExpression()
-        {
-            return _queryContainers.ToList();
-        }
-
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
             // string itemText = FormatUnhandledItem(unhandledItem);
