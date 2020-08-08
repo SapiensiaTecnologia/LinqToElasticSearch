@@ -31,5 +31,29 @@ namespace LinqToElk.IntegrationTests.Clauses.WhereByTypes
             listResults.Count.Should().Be(1);
             listResults[0].Id.Should().Be(datas[1].Id);
         }
+        
+        [Fact]
+        public void WhereGuidNullableEqual()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+            foreach (var data in datas)
+            {
+                data.Id = Guid.NewGuid();
+            }
+
+            datas[1].Id = null;
+            
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => x.Id == null);
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1);
+            listResults[0].Id.Should().BeNull();
+        }
     }
 }

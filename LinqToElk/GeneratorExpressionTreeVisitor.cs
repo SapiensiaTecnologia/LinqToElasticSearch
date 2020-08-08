@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using Nest;
+  using System.Reflection;
+  using Nest;
 using Remotion.Linq.Parsing;
 
 namespace LinqToElk
@@ -12,9 +13,11 @@ namespace LinqToElk
         private IList<QueryContainer> _queryContainers = new List<QueryContainer>();
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private bool Not { get; set; }
-        private string Property { get; set; }
+        private string PropertyName { get; set; }
         private object Value { get; set; }
         private ExpressionType? NodeType { get; set; }
+        public Type PropertyType { get; set; }
+
 
         public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
@@ -33,6 +36,20 @@ namespace LinqToElk
 
             Visit(expression.Left);
             Visit(expression.Right);
+
+            if (Value == null)
+            {
+                _queryContainers.Add(new BoolQuery()
+                {
+                    MustNot = new QueryContainer[]
+                    {
+                        new ExistsQuery()
+                        {
+                            Field = PropertyName
+                        }
+                    }
+                });
+            }
             
             switch (Value)
             {
@@ -66,11 +83,12 @@ namespace LinqToElk
                 Value = valueGuid.ToString();
             }
             
+            
             if (expressionType == ExpressionType.Equal)
             {
                 _queryContainers.Add(new MatchPhraseQuery()
                 {
-                    Field = $"{Property}.keyword",
+                    Field = $"{PropertyName}.keyword",
                     Query = (string) Value
                 });
             }
@@ -81,7 +99,7 @@ namespace LinqToElk
                 {
                     MustNot =new QueryContainer[]{ new MatchPhraseQuery()
                     {
-                        Field = $"{Property}.keyword",
+                        Field = $"{PropertyName}.keyword",
                         Query = (string) Value
                     }}
                 } );
@@ -96,7 +114,7 @@ namespace LinqToElk
                 case ExpressionType.Equal:
                     _queryContainers.Add(new TermQuery()
                     {
-                        Field = Property,
+                        Field = PropertyName,
                         Value = doubleValue
                     });
                     // _queryContainers.Add(new MatchQuery()
@@ -111,7 +129,7 @@ namespace LinqToElk
                     {
                         MustNot =new QueryContainer[]{ new TermQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             Value = doubleValue
                         }}
                     } );
@@ -119,7 +137,7 @@ namespace LinqToElk
                 case ExpressionType.GreaterThan:
                     _queryContainers.Add(new NumericRangeQuery()
                     {
-                        Field = Property,
+                        Field = PropertyName,
                         GreaterThan = doubleValue
                     });
                     break;
@@ -127,7 +145,7 @@ namespace LinqToElk
                 case ExpressionType.GreaterThanOrEqual:
                     _queryContainers.Add(new NumericRangeQuery()
                     {
-                        Field = Property,
+                        Field = PropertyName,
                         GreaterThanOrEqualTo = doubleValue
                     });
                     break;
@@ -135,7 +153,7 @@ namespace LinqToElk
                 case ExpressionType.LessThan:
                     _queryContainers.Add(new NumericRangeQuery()
                     {
-                        Field = Property,
+                        Field = PropertyName,
                         LessThan = doubleValue
                     });
                     break;
@@ -143,7 +161,7 @@ namespace LinqToElk
                 case ExpressionType.LessThanOrEqual:
                     _queryContainers.Add(new NumericRangeQuery()
                     {
-                        Field = Property,
+                        Field = PropertyName,
                         LessThanOrEqualTo = doubleValue
                     });
                     break;
@@ -156,7 +174,7 @@ namespace LinqToElk
                 case ExpressionType.Equal:
                     _queryContainers.Add(new MatchQuery()
                     {
-                        Field = Property,
+                        Field = PropertyName,
                         Query = Value.ToString()
                     });
                     break;
@@ -171,7 +189,7 @@ namespace LinqToElk
                     case ExpressionType.Equal:
                         _queryContainers.Add(new TermQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             Value = boolValue
                         });
                         break;
@@ -179,7 +197,7 @@ namespace LinqToElk
                     case ExpressionType.Not:
                         _queryContainers.Add(new TermQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             Value = !boolValue
                         }); 
                         break;
@@ -194,35 +212,35 @@ namespace LinqToElk
                     case ExpressionType.GreaterThan:
                         _queryContainers.Add(new DateRangeQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             GreaterThan = dateTime
                         });
                         break;
                     case ExpressionType.GreaterThanOrEqual:
                         _queryContainers.Add(new DateRangeQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             GreaterThanOrEqualTo = dateTime
                         });
                         break;
                     case ExpressionType.LessThan:
                         _queryContainers.Add(new DateRangeQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             LessThan = dateTime
                         });
                         break;
                     case ExpressionType.LessThanOrEqual:
                         _queryContainers.Add(new DateRangeQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             LessThanOrEqualTo = dateTime
                         });
                         break;
                     case ExpressionType.Equal:
                         _queryContainers.Add(new DateRangeQuery()
                         {
-                            Field = Property,
+                            Field = PropertyName,
                             GreaterThanOrEqualTo = dateTime,
                             LessThanOrEqualTo = dateTime 
                         });
@@ -232,7 +250,7 @@ namespace LinqToElk
                         {
                             MustNot =new QueryContainer[]{ new DateRangeQuery()
                             {
-                                Field = Property,
+                                Field = PropertyName,
                                 GreaterThanOrEqualTo = dateTime,
                                 LessThanOrEqualTo = dateTime 
                             }}
@@ -263,7 +281,7 @@ namespace LinqToElk
                     Visit(expression.Arguments[0]);
                     query = (new QueryStringQuery()
                     {
-                        Fields=  new[]{ Property },
+                        Fields=  new[]{ PropertyName },
                         Query = "*" + Value + "*"
                     });
                     AddQueryContainer(query);
@@ -273,7 +291,7 @@ namespace LinqToElk
                     Visit(expression.Arguments[0]);
                     query = (new QueryStringQuery()
                     {
-                        Fields=  new[]{ Property },
+                        Fields=  new[]{ PropertyName },
                         Query = Value + "*"
                     });
                     AddQueryContainer(query);
@@ -283,7 +301,7 @@ namespace LinqToElk
                     Visit(expression.Arguments[0]);
                     query = (new QueryStringQuery()
                     {
-                        Fields=  new[]{ Property },
+                        Fields=  new[]{ PropertyName },
                         Query = "*" + Value
                     });
                     AddQueryContainer(query);
@@ -335,7 +353,8 @@ namespace LinqToElk
         
         protected override Expression VisitMember(MemberExpression expression)
         {
-            Property = _propertyNameInferrerParser.Parser(expression.Member.Name);
+            PropertyName = _propertyNameInferrerParser.Parser(expression.Member.Name);
+            PropertyType = expression.Type;
 
             if (expression.Type == typeof(bool))
             {
@@ -352,6 +371,8 @@ namespace LinqToElk
             
             return expression;
         }
+
+
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
             // string itemText = FormatUnhandledItem(unhandledItem);
