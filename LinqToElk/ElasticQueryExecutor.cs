@@ -1,14 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using Nest;
+using Newtonsoft.Json;
+using System.Linq.Dynamic.Core;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElk
 {
-    public class ElasticQueryExecutor<TU> : IQueryExecutor where TU : class
+    public class ElasticQueryExecutor<TU> : IQueryExecutor
     {
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
@@ -26,8 +31,8 @@ namespace LinqToElk
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
             var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
-            
-            var documents= _elasticClient.Search<TU>(descriptor =>
+
+            var documents= _elasticClient.Search<IDictionary<string, object>>(descriptor =>
             {
                 descriptor.Index(_dataId);
 
@@ -72,9 +77,17 @@ namespace LinqToElk
                 
                 return descriptor;
 
-            }).Documents;
+            });
 
-            return (IEnumerable<T>) documents;
+            var result = JsonConvert.DeserializeObject<IEnumerable<TU>>(
+                JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
+
+            if (queryModel.SelectClause != null && queryModel.SelectClause.Selector is MemberExpression memberExpression)
+            {
+                return (IEnumerable<T>) result.AsQueryable().Select(memberExpression.Member.Name);
+            }
+
+            return (IEnumerable<T>) result;
         }
 
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
@@ -92,7 +105,7 @@ namespace LinqToElk
             {
                 if (resultOperator is CountResultOperator)
                 {
-                    var result = _elasticClient.Count<TU>(descriptor =>
+                    var result = _elasticClient.Count<object>(descriptor =>
                     {
                         descriptor.Index(_dataId);
                     

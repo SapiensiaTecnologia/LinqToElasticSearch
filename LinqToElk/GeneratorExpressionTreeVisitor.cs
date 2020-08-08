@@ -50,6 +50,7 @@ namespace LinqToElk
                     VisitNumericProperty(expression.NodeType);
                     break;
                 case string _:
+                case Guid _:
                     VisitStringProperty(expression.NodeType);
                     break;
             }
@@ -60,6 +61,11 @@ namespace LinqToElk
 
         private void VisitStringProperty(ExpressionType expressionType)
         {
+            if (Value is Guid valueGuid)
+            {
+                Value = valueGuid.ToString();
+            }
+            
             if (expressionType == ExpressionType.Equal)
             {
                 _queryContainers.Add(new MatchPhraseQuery()

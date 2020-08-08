@@ -42,5 +42,23 @@ namespace LinqToElk.IntegrationTests.Clauses
             //Then
             listResults.Count.Should().Be(15);
         }
+        
+        
+        [Fact] public void SelectObjects2()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(15);
+
+            Bulk(datas);
+            
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Select(x => x.Id);
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(15);
+        }
     }
 }

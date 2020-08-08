@@ -6,7 +6,7 @@ using Remotion.Linq.Parsing.Structure;
 
 namespace LinqToElk
 {
-    public class ElasticQueryable<T> : QueryableBase<T> where T : class
+    public class ElasticQueryable<T> : QueryableBase<T>
     {
         public ElasticQueryable(IElasticClient elasticClient, string dataId)
             : base(new DefaultQueryProvider(typeof(ElasticQueryable<>), QueryParser.CreateDefault(), new ElasticQueryExecutor<T>(elasticClient, dataId)))

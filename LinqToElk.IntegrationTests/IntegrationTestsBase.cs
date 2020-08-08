@@ -6,7 +6,7 @@ using Nest;
 
 namespace LinqToElk.IntegrationTests
 {
-    public abstract class IntegrationTestsBase<T> : IDisposable where T : class 
+    public abstract class IntegrationTestsBase<T> : IDisposable where T : class
     {
         protected readonly ElasticClient ElasticClient;
         protected readonly ElasticQueryable<T> Sut;
