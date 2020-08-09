@@ -12,6 +12,7 @@ namespace LinqToElk.IntegrationTests.Clauses.WhereByTypes
         {
             //Given
             var datas = Fixture.CreateMany<SampleData>().ToList();
+            
             datas[1].Name = "abcdef";
             
             Bulk(datas);

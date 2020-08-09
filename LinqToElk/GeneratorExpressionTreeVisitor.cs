@@ -74,6 +74,11 @@ namespace LinqToElk
                     });
                 }
             }
+
+            if (Value is Enum)
+            {
+                Value = (int) Value;
+            }
             
             switch (Value)
             {

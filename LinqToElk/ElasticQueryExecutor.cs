@@ -65,21 +65,20 @@ namespace LinqToElk
 
                 if (queryAggregator.OrderByExpressions.Any())
                 {
-                    foreach (var orderByExpression in queryAggregator.OrderByExpressions)
+                    descriptor.Sort(d =>
                     {
-
-                        var property = _propertyNameInferrerParser.Parser(orderByExpression.PropertyName) +
-                                         orderByExpression.GetKeywordIfNecessary();
-
-                        if (orderByExpression.OrderingDirection == OrderingDirection.Asc)
+                        foreach (var orderByExpression in queryAggregator.OrderByExpressions)
                         {
-                            descriptor.Sort(d => d.Ascending(new Field(property)));
+                            var property = _propertyNameInferrerParser.Parser(orderByExpression.PropertyName) +
+                                           orderByExpression.GetKeywordIfNecessary();
+                            d.Field(property,
+                                orderByExpression.OrderingDirection == OrderingDirection.Asc
+                                    ? SortOrder.Ascending
+                                    : SortOrder.Descending);
                         }
-                        else
-                        {
-                            descriptor.Sort(d => d.Descending(new Field(property)));
-                        }
-                    }
+
+                        return d;
+                    });
                 }
                 
                 return descriptor;
