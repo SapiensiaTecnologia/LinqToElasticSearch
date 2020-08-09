@@ -4,7 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
   using System.Reflection;
   using Nest;
-using Remotion.Linq.Parsing;
+  using Remotion.Linq.Clauses.Expressions;
+  using Remotion.Linq.Parsing;
 
 namespace LinqToElk
 {
@@ -351,8 +352,15 @@ namespace LinqToElk
             return expression;
         }
         
+        protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
+        {
+            Console.WriteLine(expression.ReferencedQuerySource.ItemName);
+            return expression;
+        }
+        
         protected override Expression VisitMember(MemberExpression expression)
         {
+            Visit(expression.Expression);
             PropertyName = _propertyNameInferrerParser.Parser(expression.Member.Name);
             PropertyType = expression.Type;
 

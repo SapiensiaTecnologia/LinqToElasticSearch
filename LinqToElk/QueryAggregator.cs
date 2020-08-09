@@ -10,6 +10,7 @@ using Nest;
         public List<QueryContainer> QueryContainers = new List<QueryContainer>();
         public int? Take { get; set; }
         public int? Skip { get; set; }
+        public List<string> PropertiesToSelect = new List<string>();
         public List<OrderProperties> OrderByExpressions = new List<OrderProperties>();
     }
 

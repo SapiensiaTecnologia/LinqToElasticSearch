@@ -1,10 +1,12 @@
-﻿﻿﻿using System.Collections.ObjectModel;
+﻿﻿﻿using System;
+  using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
-using Remotion.Linq.Clauses.ResultOperators;
+  using Remotion.Linq.Clauses.Expressions;
+  using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElk
 {
@@ -32,6 +34,34 @@ namespace LinqToElk
             VisitBodyClauses(queryModel.BodyClauses, queryModel);
             VisitResultOperators(queryModel.ResultOperators, queryModel);
         }
+        
+
+        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
+        {
+            // var selectorExpression = (MemberExpression) selectClause.Selector;
+            // QueryAggregator.PropertiesToSelect.Add(selectorExpression.Member.Name);
+            // VisitQueryModel(((QuerySourceReferenceExpression) selectorExpression.Expression));
+            base.VisitSelectClause(selectClause, queryModel);;
+        }
+        
+        public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
+        {
+            if (fromClause.FromExpression is SubQueryExpression subQueryExpression)
+            {
+                VisitQueryModel(subQueryExpression.QueryModel);
+            }
+            
+            base.VisitMainFromClause(fromClause, queryModel);
+        }
+        
+        public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
+        {
+            var queryContainers = new GeneratorExpressionTreeVisitor(_propertyNameInferrerParser)
+                .GetNestExpression(whereClause.Predicate);
+            QueryAggregator.QueryContainers.AddRange(queryContainers);
+            base.VisitWhereClause (whereClause, queryModel, index);
+        }
+
 
         protected override void VisitResultOperators(ObservableCollection<ResultOperatorBase> resultOperators,
             QueryModel queryModel)
@@ -49,14 +79,6 @@ namespace LinqToElk
                 }
             }
             base.VisitResultOperators(resultOperators, queryModel);
-        }
-        
-        public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
-        {
-            var queryContainers = new GeneratorExpressionTreeVisitor(_propertyNameInferrerParser)
-                .GetNestExpression(whereClause.Predicate);
-            QueryAggregator.QueryContainers.AddRange(queryContainers);
-            base.VisitWhereClause (whereClause, queryModel, index);
         }
         
         public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)

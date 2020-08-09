@@ -10,7 +10,6 @@ namespace LinqToElk.IntegrationTests
     {
         protected readonly ElasticClient ElasticClient;
         protected readonly ElasticQueryable<T> Sut;
-        // private static readonly string DataId = "linqtoelk-" + typeof(T).Name.ToLower();
         private readonly string DataId = $"linqtoelk-${typeof(T).Name.ToLower()}-${Guid.NewGuid()}";
         protected Fixture Fixture { get; }
 
