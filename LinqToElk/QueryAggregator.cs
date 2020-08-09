@@ -10,7 +10,7 @@ using Nest;
         public List<QueryContainer> QueryContainers = new List<QueryContainer>();
         public int? Take { get; set; }
         public int? Skip { get; set; }
-        public OrderProperties OrderBy { get; set; }
+        public List<OrderProperties> OrderByExpressions = new List<OrderProperties>();
     }
 
     public class OrderProperties

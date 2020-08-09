@@ -34,6 +34,10 @@ namespace LinqToElk
             {
                 descriptor.Index(_dataId);
 
+                if (queryModel.SelectClause != null && queryModel.SelectClause.Selector is MemberExpression memberExpression)
+                {
+                    descriptor.Source(x => x.Includes(f => f.Field(_propertyNameInferrerParser.Parser(memberExpression.Member.Name))));
+                }
 
                 if (queryAggregator.Skip != null)
                 {
@@ -60,30 +64,37 @@ namespace LinqToElk
                 }
 
 
-                if (queryAggregator.OrderBy != null)
+                if (queryAggregator.OrderByExpressions.Any())
                 {
-                    var property = _propertyNameInferrerParser.Parser(queryAggregator.OrderBy.PropertyName) + queryAggregator.OrderBy.GetKeywordIfNecessary();
-                    if (queryAggregator.OrderBy.OrderingDirection == OrderingDirection.Asc)
+                    foreach (var orderByExpression in queryAggregator.OrderByExpressions)
                     {
-                        descriptor.Sort(d => d.Ascending(new Field(property)));
-                    }
-                    else
-                    {
-                        descriptor.Sort(d => d.Descending(new Field(property)));
+
+                        var property = _propertyNameInferrerParser.Parser(orderByExpression.PropertyName) +
+                                         orderByExpression.GetKeywordIfNecessary();
+
+                        if (orderByExpression.OrderingDirection == OrderingDirection.Asc)
+                        {
+                            descriptor.Sort(d => d.Ascending(new Field(property)));
+                        }
+                        else
+                        {
+                            descriptor.Sort(d => d.Descending(new Field(property)));
+                        }
                     }
                 }
                 
                 return descriptor;
 
             });
-
-            var result = JsonConvert.DeserializeObject<IEnumerable<TU>>(
-                JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
-
-            if (queryModel.SelectClause != null && queryModel.SelectClause.Selector is MemberExpression memberExpression)
+            
+            if (queryModel.SelectClause != null && queryModel.SelectClause.Selector is MemberExpression)
             {
-                return (IEnumerable<T>) result.AsQueryable().Select(memberExpression.Member.Name);
+                return JsonConvert.DeserializeObject<IEnumerable<T>>(
+                    JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values), Formatting.Indented));
             }
+
+            var result = JsonConvert.DeserializeObject<IEnumerable<T>>(
+                JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
 
             return (IEnumerable<T>) result;
         }

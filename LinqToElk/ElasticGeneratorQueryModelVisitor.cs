@@ -1,8 +1,8 @@
 ﻿﻿﻿using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
-  using System.Reflection;
-  using Remotion.Linq;
+using System.Reflection;
+using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 
@@ -60,15 +60,15 @@ namespace LinqToElk
         
         public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)
         {
-            if (orderByClause.Orderings[0].Expression is MemberExpression  memberExpression)
+            foreach (var ordering in orderByClause.Orderings)
             {
-                
+                var memberExpression = (MemberExpression) ordering.Expression;
                 var direction = orderByClause.Orderings[0].OrderingDirection;
                 var propertyName = memberExpression.Member.Name;
                 var type = ((PropertyInfo) memberExpression.Member).PropertyType;
-                QueryAggregator.OrderBy = new OrderProperties(propertyName, type, direction);
-
+                QueryAggregator.OrderByExpressions.Add(new OrderProperties(propertyName, type, direction)); 
             }
+            
             base.VisitOrderByClause (orderByClause, queryModel, index);
         }
     }
