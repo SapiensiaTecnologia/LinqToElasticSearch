@@ -11,7 +11,7 @@ namespace LinqToElk
 {
     public class GeneratorExpressionTreeVisitor : ThrowingExpressionVisitor
     {
-        private IList<QueryContainer> _queryContainers = new List<QueryContainer>();
+        private List<QueryContainer> _queryContainers = new List<QueryContainer>();
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private bool Not { get; set; }
         private string PropertyName { get; set; }
@@ -28,6 +28,13 @@ namespace LinqToElk
         public List<QueryContainer> GetNestExpression(Expression linqExpression)
         {
             Visit(linqExpression);
+            
+            var qc = (new BoolQuery()
+            {
+                Should = ShouldList
+            }); 
+            
+            _queryContainers.Add(qc);
             return _queryContainers.ToList();
         }
 
@@ -105,7 +112,7 @@ namespace LinqToElk
             {
                 _queryContainers.Add(new MatchPhraseQuery()
                 {
-                    Field = $"{PropertyName}.keyword",
+                    Field = $"{PropertyName}",
                     Query = (string) Value
                 });
             }
@@ -116,7 +123,7 @@ namespace LinqToElk
                 {
                     MustNot =new QueryContainer[]{ new MatchPhraseQuery()
                     {
-                        Field = $"{PropertyName}.keyword",
+                        Field = $"{PropertyName}",
                         Query = (string) Value
                     }}
                 } );
@@ -124,14 +131,12 @@ namespace LinqToElk
 
             if (expressionType == ExpressionType.OrElse)
             {
-                var qc = (new BoolQuery()
-                {
-                    Should = new[]{ _queryContainers[0], _queryContainers[1]}
-                }); 
+                ShouldList.AddRange(_queryContainers);
                 _queryContainers.Clear();
-                _queryContainers.Add(qc);
             }
         }
+
+        public List<QueryContainer> ShouldList = new List<QueryContainer>();
 
         private void VisitNumericProperty(ExpressionType expressionType)
         {
@@ -396,7 +401,6 @@ namespace LinqToElk
         
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            Console.WriteLine(expression.ReferencedQuerySource.ItemName);
             return expression;
         }
         

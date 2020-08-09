@@ -12,12 +12,14 @@ namespace LinqToElk.IntegrationTests.Clauses.WhereByTypes
         {
             //Given
             var datas = Fixture.CreateMany<SampleData>().ToList();
+            datas[1].Name = "abcdef";
+            
             Bulk(datas);
 
             ElasticClient.Indices.Refresh();
             
             //When
-            var results = Sut.Where(x => x.Name == datas[1].Name);
+            var results = Sut.Where(x => x.Name == "abcdef");
             var listResults = results.ToList();
 
             //Then

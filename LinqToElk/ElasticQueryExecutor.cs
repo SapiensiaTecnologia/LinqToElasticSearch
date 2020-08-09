@@ -10,7 +10,7 @@ using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElk
 {
-    public class ElasticQueryExecutor<TU> : IQueryExecutor
+    public class ElasticQueryExecutor: IQueryExecutor
     {
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
@@ -86,7 +86,7 @@ namespace LinqToElk
 
             });
             
-            if (queryModel.SelectClause != null && queryModel.SelectClause.Selector is MemberExpression)
+            if (queryModel.SelectClause?.Selector is MemberExpression)
             {
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(
                     JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values), Formatting.Indented));
@@ -95,7 +95,7 @@ namespace LinqToElk
             var result = JsonConvert.DeserializeObject<IEnumerable<T>>(
                 JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
 
-            return (IEnumerable<T>) result;
+            return result;
         }
 
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)

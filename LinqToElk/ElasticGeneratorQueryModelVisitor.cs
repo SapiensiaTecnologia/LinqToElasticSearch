@@ -1,12 +1,10 @@
-﻿﻿﻿using System;
-  using System.Collections.ObjectModel;
-using System.Linq;
+﻿using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
-  using Remotion.Linq.Clauses.Expressions;
-  using Remotion.Linq.Clauses.ResultOperators;
+using Remotion.Linq.Clauses.Expressions;
+using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElk
 {
@@ -33,15 +31,6 @@ namespace LinqToElk
             queryModel.MainFromClause.Accept(this, queryModel);
             VisitBodyClauses(queryModel.BodyClauses, queryModel);
             VisitResultOperators(queryModel.ResultOperators, queryModel);
-        }
-        
-
-        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
-        {
-            // var selectorExpression = (MemberExpression) selectClause.Selector;
-            // QueryAggregator.PropertiesToSelect.Add(selectorExpression.Member.Name);
-            // VisitQueryModel(((QuerySourceReferenceExpression) selectorExpression.Expression));
-            base.VisitSelectClause(selectClause, queryModel);;
         }
         
         public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
