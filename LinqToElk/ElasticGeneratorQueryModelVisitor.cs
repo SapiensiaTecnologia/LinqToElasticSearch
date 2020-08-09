@@ -10,12 +10,12 @@ namespace LinqToElk
 {
     public class ElasticGeneratorQueryModelVisitor: QueryModelVisitorBase
     {
-        private GeneratorExpressionTreeVisitor _generatorExpressionTreeVisitor;
+        private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
 
         public ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
-            _generatorExpressionTreeVisitor = new GeneratorExpressionTreeVisitor(propertyNameInferrerParser);
+            _propertyNameInferrerParser = propertyNameInferrerParser;
         }
 
         public QueryAggregator GenerateElasticQuery(QueryModel queryModel)
@@ -53,7 +53,8 @@ namespace LinqToElk
         
         public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
         {
-            var queryContainers = _generatorExpressionTreeVisitor.GetNestExpression(whereClause.Predicate);
+            var queryContainers = new GeneratorExpressionTreeVisitor(_propertyNameInferrerParser)
+                .GetNestExpression(whereClause.Predicate);
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             base.VisitWhereClause (whereClause, queryModel, index);
         }

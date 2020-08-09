@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using Nest;
 using Newtonsoft.Json;
-using System.Linq.Dynamic.Core;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
