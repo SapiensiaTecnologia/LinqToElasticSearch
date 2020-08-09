@@ -40,16 +40,32 @@ namespace LinqToElk
 
             if (Value == null)
             {
-                _queryContainers.Add(new BoolQuery()
+                if (expression.NodeType == ExpressionType.Equal)
                 {
-                    MustNot = new QueryContainer[]
+                    _queryContainers.Add(new BoolQuery()
                     {
-                        new ExistsQuery()
+                        MustNot = new QueryContainer[]
                         {
-                            Field = PropertyName
+                            new ExistsQuery()
+                            {
+                                Field = PropertyName
+                            }
                         }
-                    }
-                });
+                    });
+                }
+                if (expression.NodeType == ExpressionType.NotEqual)
+                {
+                    _queryContainers.Add(new BoolQuery()
+                    {
+                        Must = new QueryContainer[]
+                        {
+                            new ExistsQuery()
+                            {
+                                Field = PropertyName
+                            }
+                        }
+                    });
+                }
             }
             
             switch (Value)
@@ -104,6 +120,16 @@ namespace LinqToElk
                         Query = (string) Value
                     }}
                 } );
+            }
+
+            if (expressionType == ExpressionType.OrElse)
+            {
+                var qc = (new BoolQuery()
+                {
+                    Should = new[]{ _queryContainers[0], _queryContainers[1]}
+                }); 
+                _queryContainers.Clear();
+                _queryContainers.Add(qc);
             }
         }
 
@@ -166,6 +192,14 @@ namespace LinqToElk
                         LessThanOrEqualTo = doubleValue
                     });
                     break;
+                case ExpressionType.OrElse:
+                    var qc = (new BoolQuery()
+                    {
+                        Should = new[]{ _queryContainers[0], _queryContainers[1]}
+                    }); 
+                    _queryContainers.Clear();
+                    _queryContainers.Add(qc);
+                    break;
             }
         }
         private void VisitEnumProperty(ExpressionType expressionType)
@@ -201,6 +235,14 @@ namespace LinqToElk
                             Field = PropertyName,
                             Value = !boolValue
                         }); 
+                        break;
+                    case ExpressionType.OrElse:
+                        var qc = (new BoolQuery()
+                        {
+                            Should = new[]{ _queryContainers[0], _queryContainers[1]}
+                        }); 
+                        _queryContainers.Clear();
+                        _queryContainers.Add(qc);
                         break;
                 }
         }

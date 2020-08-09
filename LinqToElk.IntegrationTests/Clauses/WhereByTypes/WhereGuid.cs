@@ -55,5 +55,40 @@ namespace LinqToElk.IntegrationTests.Clauses.WhereByTypes
             listResults.Count.Should().Be(1);
             listResults[0].Id.Should().BeNull();
         }
+
+        [Fact]
+        public void WhereGuidTwice()
+        {
+            //Given
+            var guids = Fixture.CreateMany<Guid>(5).ToList();
+
+            var datas = Fixture.CreateMany<SampleData>(5).ToList();
+            var count = 0;
+            foreach (var data in datas)
+            {
+                data.Id = guids[count];
+                count++;
+            }
+
+            datas[1].Id = null;
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var results = Sut.Where(x => x.Id != null).Where(x =>
+                x.Id == guids[0] ||
+                x.Id == guids[2] ||
+                x.Id == guids[3] ||
+                x.Id == guids[4]);
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(4);
+            listResults[0].Id.Should().Be(guids[0]);
+            listResults[1].Id.Should().Be(guids[2]);
+            listResults[2].Id.Should().Be(guids[3]);
+            listResults[3].Id.Should().Be(guids[4]);
+        }
     }
 }
