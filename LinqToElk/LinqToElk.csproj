@@ -2,7 +2,7 @@
   
   <PropertyGroup>
     <PackageId>LinqToELk</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>Felipe Cardozo (fraifelipe)</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="NEST" Version="7.4.2" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-    <PackageReference Include="Remotion.Linq" Version="2.2.0" />
+    <PackageReference Include="Remotion.Linq" Version="2.1.2" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.0" />
   </ItemGroup>
 
