@@ -15,7 +15,7 @@ dotnet add package LinqToELk
 
 https://www.nuget.org/packages/LinqToElk/
 
-![Image of Yaktocat](https://github.com/fraifelipe/LinqToElk/github/exemple.png)
+![Image of Exemple](https://raw.githubusercontent.com/fraifelipe/LinqToElk/master/github/exemple.png)
 
 
 # Compatibility
