@@ -1,4 +1,4 @@
-# LINQ To ELK
+# LINQ To ElasticSearch
 
 > 🚧 Experimental State 🚧
 
