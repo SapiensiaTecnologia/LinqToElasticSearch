@@ -10,7 +10,7 @@ using Remotion.Linq.Parsing;
 
 namespace LinqToElasticSearch
 {
-    public class GeneratorExpressionTreeVisitor: ThrowingExpressionVisitor
+    public class GeneratorExpressionTreeVisitor<T>: ThrowingExpressionVisitor
     {
         private List<QueryContainer> _queryContainers = new List<QueryContainer>();
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
@@ -18,13 +18,11 @@ namespace LinqToElasticSearch
         private string PropertyName { get; set; }
         private object Value { get; set; }
         private ExpressionType? NodeType { get; set; }
-        private Type EntityType { get; set; }
         private Type PropertyType { get; set; }
 
 
-        public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser, Type entityType)
+        public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
-            EntityType = entityType;
             _propertyNameInferrerParser = propertyNameInferrerParser;
         }
 
@@ -81,7 +79,7 @@ namespace LinqToElasticSearch
             
             if (PropertyType.IsEnum)
             {
-                if (ContainsStringEnumAttribute(EntityType, PropertyName))
+                if (ContainsStringEnumAttribute(typeof(T), PropertyName))
                 {
                     Value = PropertyType.GetEnumNames().ToList()[(int) Value];
                 }

@@ -9,11 +9,10 @@ using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElasticSearch
 {
-    public class ElasticGeneratorQueryModelVisitor: QueryModelVisitorBase
+    public class ElasticGeneratorQueryModelVisitor<TU>: QueryModelVisitorBase
     {
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
-        public Type EntityType { get; set; }
 
         public ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
@@ -22,7 +21,6 @@ namespace LinqToElasticSearch
 
         public QueryAggregator GenerateElasticQuery<T>(QueryModel queryModel)
         {
-            EntityType = typeof(T);
             QueryAggregator = new QueryAggregator();
             VisitQueryModel(queryModel);
             return QueryAggregator;
@@ -48,7 +46,7 @@ namespace LinqToElasticSearch
         
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
-            var queryContainers = new GeneratorExpressionTreeVisitor(_propertyNameInferrerParser, EntityType)
+            var queryContainers = new GeneratorExpressionTreeVisitor<TU>(_propertyNameInferrerParser)
                 .GetNestExpression(whereClause.Predicate);
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             base.VisitWhereClause (whereClause, queryModel, index);
