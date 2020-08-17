@@ -5,17 +5,17 @@
 This repository is a LINQ Provider To ElasticSearch
 
 # Where can I get it?
-Install using the [LinqToELk NuGet package](https://www.nuget.org/packages/LinqToELk):
+Install using the [LinqToElasticSearch NuGet package](https://www.nuget.org/packages/LinqToElasticSearch):
 ```
-dotnet add package LinqToELk
+dotnet add package LinqToElasticSearch
 ```
 
 
 # Getting Started
 
-https://www.nuget.org/packages/LinqToElk/
+https://www.nuget.org/packages/LinqToElasticSearch/
 
-![Image of Exemple](https://raw.githubusercontent.com/fraifelipe/LinqToElk/master/github/exemple.png)
+![Image of Exemple](https://raw.githubusercontent.com/SapiensiaTecnologia/LinqToElasticSearch/master/github/exemple.png)
 
 
 # Compatibility
