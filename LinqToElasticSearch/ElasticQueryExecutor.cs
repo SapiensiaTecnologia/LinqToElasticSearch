@@ -27,7 +27,7 @@ namespace LinqToElasticSearch
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
+            var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery<T>(queryModel);
 
             var documents= _elasticClient.Search<IDictionary<string, object>>(descriptor =>
             {
@@ -106,7 +106,7 @@ namespace LinqToElasticSearch
 
         public T ExecuteScalar<T>(QueryModel queryModel)                
         {
-            var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery(queryModel);
+            var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery<T>(queryModel);
 
             foreach (var resultOperator in queryModel.ResultOperators)
             {

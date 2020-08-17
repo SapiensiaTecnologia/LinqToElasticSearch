@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using Remotion.Linq;
@@ -12,14 +13,16 @@ namespace LinqToElasticSearch
     {
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
+        public Type EntityType { get; set; }
 
         public ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
             _propertyNameInferrerParser = propertyNameInferrerParser;
         }
 
-        public QueryAggregator GenerateElasticQuery(QueryModel queryModel)
+        public QueryAggregator GenerateElasticQuery<T>(QueryModel queryModel)
         {
+            EntityType = typeof(T);
             QueryAggregator = new QueryAggregator();
             VisitQueryModel(queryModel);
             return QueryAggregator;
@@ -43,9 +46,9 @@ namespace LinqToElasticSearch
             base.VisitMainFromClause(fromClause, queryModel);
         }
         
-        public override void VisitWhereClause (WhereClause whereClause, QueryModel queryModel, int index)
+        public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
-            var queryContainers = new GeneratorExpressionTreeVisitor(_propertyNameInferrerParser)
+            var queryContainers = new GeneratorExpressionTreeVisitor(_propertyNameInferrerParser, EntityType)
                 .GetNestExpression(whereClause.Predicate);
             QueryAggregator.QueryContainers.AddRange(queryContainers);
             base.VisitWhereClause (whereClause, queryModel, index);

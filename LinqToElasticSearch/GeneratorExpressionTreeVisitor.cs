@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using Elasticsearch.Net;
 using Nest;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Parsing;
 
 namespace LinqToElasticSearch
 {
-    public class GeneratorExpressionTreeVisitor : ThrowingExpressionVisitor
+    public class GeneratorExpressionTreeVisitor: ThrowingExpressionVisitor
     {
         private List<QueryContainer> _queryContainers = new List<QueryContainer>();
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
@@ -16,11 +18,13 @@ namespace LinqToElasticSearch
         private string PropertyName { get; set; }
         private object Value { get; set; }
         private ExpressionType? NodeType { get; set; }
-        public Type PropertyType { get; set; }
+        private Type EntityType { get; set; }
+        private Type PropertyType { get; set; }
 
 
-        public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
+        public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser, Type entityType)
         {
+            EntityType = entityType;
             _propertyNameInferrerParser = propertyNameInferrerParser;
         }
 
@@ -73,10 +77,18 @@ namespace LinqToElasticSearch
                     });
                 }
             }
-
-            if (Value is Enum)
+            
+            
+            if (PropertyType.IsEnum)
             {
-                Value = (int) Value;
+                if (ContainsStringEnumAttribute(EntityType, PropertyName))
+                {
+                    Value = PropertyType.GetEnumNames().ToList()[(int) Value];
+                }
+                else
+                {
+                    Value = (int) Value;
+                }
             }
             
             switch (Value)
@@ -401,6 +413,17 @@ namespace LinqToElasticSearch
         {
             Value = expression.Value;
             return expression;
+        }
+        private static bool ContainsStringEnumAttribute(Type entityType, string propertyName)
+        {
+            var prop = entityType.GetProperties().FirstOrDefault(x => x.Name.ToLower() == propertyName.ToLower());
+
+            if (prop == null)
+            {
+                return false;
+            }
+            
+            return prop.GetCustomAttributes(true).Any(attribute => attribute is StringEnumAttribute && prop.PropertyType.IsEnum);
         }
         
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
