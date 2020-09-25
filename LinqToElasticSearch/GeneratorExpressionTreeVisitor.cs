@@ -356,7 +356,7 @@ namespace LinqToElasticSearch
                         {
                             Fields=  new[]{ PropertyName },
                             Type = TextQueryType.PhrasePrefix,
-                            Query = "*" + Value + "*",
+                            Query = (string) Value,
                             MaxExpansions = 200
                         });
                     }
