@@ -332,7 +332,7 @@ namespace LinqToElasticSearch
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
             // In production code, handle this via method lookup tables.
-            QueryStringQuery query;
+            QueryContainer query;
             switch (expression.Method.Name)
             {
                 case "ToLower":
@@ -341,11 +341,26 @@ namespace LinqToElasticSearch
                 case "Contains":
                     Visit(expression.Object);
                     Visit(expression.Arguments[0]);
-                    query = (new QueryStringQuery()
+                    var tokens = ((string) Value).Split(' ');
+                    if (tokens.Length == 1)
                     {
-                        Fields=  new[]{ PropertyName },
-                        Query = "*" + Value + "*"
-                    });
+                        query = (new QueryStringQuery()
+                        {
+                            Fields=  new[]{ PropertyName },
+                            Query = "*" + Value + "*"
+                        });
+                    }
+                    else
+                    {
+                        query = (new MultiMatchQuery()
+                        {
+                            Fields=  new[]{ PropertyName },
+                            Type = TextQueryType.PhrasePrefix,
+                            Query = "*" + Value + "*",
+                            MaxExpansions = 200
+                        });
+                    }
+
                     AddQueryContainer(query);
                     break;
                 case "StartsWith":

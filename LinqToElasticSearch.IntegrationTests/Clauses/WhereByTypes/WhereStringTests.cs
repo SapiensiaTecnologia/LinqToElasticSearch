@@ -70,6 +70,29 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
         }
         
         [Fact]
+        public void WhereStringContainsWithManyWords()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>().ToList();
+
+            datas[0].Name = "Felipe Carlos Ribeiro Cardozo";
+            datas[1].Name = "Felipe Cardozo";
+            datas[2].Name = "Joao Felipe";
+            
+            Bulk(datas);
+
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Where(x => x.Name.Contains("Felipe Cardozo"));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1);
+            listResults[0].Name.Should().Be(datas[1].Name);
+        }
+        
+        [Fact]
         public void WhereStringContainsToLower()
         {
             //Given
