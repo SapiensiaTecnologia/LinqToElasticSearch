@@ -79,36 +79,32 @@ namespace LinqToElasticSearch
             
             if (PropertyType.IsEnum)
             {
-                if (ContainsStringEnumAttribute(typeof(T), PropertyName))
-                {
-                    Value = PropertyType.GetEnumNames().ToList()[(int) Value];
-                }
-                else
-                {
-                    Value = (int) Value;
-                }
+                VisitEnumProperty(expression.NodeType);
             }
-            
-            switch (Value)
+            else
             {
-                case DateTime _:
-                    VisitDateProperty(expression.NodeType);
-                    break;
-                case bool _:
-                    VisitBoolProperty(expression.NodeType);
-                    break;
-                case int _:
-                case long _:
-                case float _:
-                case double _:
-                case decimal _:
-                    VisitNumericProperty(expression.NodeType);
-                    break;
-                case string _:
-                case Guid _:
-                    VisitStringProperty(expression.NodeType);
-                    break;
+                switch (Value)
+                {
+                    case DateTime _:
+                        VisitDateProperty(expression.NodeType);
+                        break;
+                    case bool _:
+                        VisitBoolProperty(expression.NodeType);
+                        break;
+                    case int _:
+                    case long _:
+                    case float _:
+                    case double _:
+                    case decimal _:
+                        VisitNumericProperty(expression.NodeType);
+                        break;
+                    case string _:
+                    case Guid _:
+                        VisitStringProperty(expression.NodeType);
+                        break;
+                }
             }
+          
             
             return expression;
         }
@@ -226,10 +222,10 @@ namespace LinqToElasticSearch
             switch (expressionType)
             {
                 case ExpressionType.Equal:
-                    _queryContainers.Add(new MatchQuery()
+                    _queryContainers.Add(new TermQuery()
                     {
                         Field = PropertyName,
-                        Query = Value.ToString()
+                        Value = ConvertEnumValue(typeof(T),PropertyName,Value)
                     });
                     break;
             }
@@ -427,16 +423,18 @@ namespace LinqToElasticSearch
             Value = expression.Value;
             return expression;
         }
-        private static bool ContainsStringEnumAttribute(Type entityType, string propertyName)
+        private object ConvertEnumValue(Type entityType, string propertyName,object value)
         {
+            var enumValue = Enum.Parse(PropertyType, value.ToString());
             var prop = entityType.GetProperties().FirstOrDefault(x => x.Name.ToLower() == propertyName.ToLower());
 
-            if (prop == null)
-            {
-                return false;
-            }
             
-            return prop.GetCustomAttributes(true).Any(attribute => attribute is StringEnumAttribute && prop.PropertyType.IsEnum);
+            if (prop!=null && prop.GetCustomAttributes(true)
+                .Any(attribute => attribute is StringEnumAttribute && prop.PropertyType.IsEnum))
+            {
+                return enumValue.ToString();
+            }
+            return (int) enumValue;
         }
         
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
