@@ -90,5 +90,77 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
             listResults[2].Id.Should().Be(guids[3]);
             listResults[3].Id.Should().Be(guids[4]);
         }
+        
+        [Fact]
+        public void WhereGuidContains()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(10).ToList();
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var guidsWithoutLast = datas.Where(x => x != datas.Last()).Select(x => x.Id.Value);
+            var results = Sut.Where(x => guidsWithoutLast.Contains(x.Id.Value));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(9);
+        }
+        
+        [Fact]
+        public void WhereNullableGuidContains()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(10).ToList();
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var guidsWithoutLast = datas.Where(x => x != datas.Last()).Select(x => x.Id);
+            var results = Sut.Where(x => guidsWithoutLast.Contains(x.Id.Value));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(9);
+        }
+
+        [Fact]
+        public void WhereNotContainsGuid()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(9).ToList();
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var guidsWithoutLast = datas.Where(x => x != datas.Last()).Select(x => x.Id.Value);
+            var results = Sut.Where(x => !guidsWithoutLast.Contains(x.Id.Value));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1); 
+        }
+        
+        [Fact]
+        public void WhereNotContainsNullableGuid()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(9).ToList();
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var guidsWithoutLast = datas.Where(x => x != datas.Last()).Select(x => x.Id);
+            var results = Sut.Where(x => !guidsWithoutLast.Contains(x.Id.Value));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(1); 
+        }
     }
 }

@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using Elasticsearch.Net;
 using Nest;
 using Remotion.Linq.Clauses.Expressions;
+using Remotion.Linq.Clauses.ResultOperators;
 using Remotion.Linq.Parsing;
 
 namespace LinqToElasticSearch
@@ -386,6 +386,39 @@ namespace LinqToElasticSearch
             return expression;
         }
 
+        protected override Expression VisitSubQuery(SubQueryExpression expression)
+        {
+            foreach (var resultOperator in expression.QueryModel.ResultOperators)
+            {
+                switch (resultOperator)
+                {
+                    case ContainsResultOperator containsResultOperator:
+                        Visit(containsResultOperator.Item);
+                        Visit(expression.QueryModel.MainFromClause.FromExpression);
+
+                        switch (containsResultOperator.Item.Type)
+                        {
+                            case Type guidType when guidType == typeof(Guid):
+                                AddQueryContainer(new TermsQuery()
+                                {
+                                    Field = PropertyName,
+                                    Terms = ((IEnumerable<Guid>) Value).Select(x => x.ToString())
+                                });
+                                break;
+                            case Type nullableGuidType when nullableGuidType == typeof(Guid?):
+                                AddQueryContainer(new TermsQuery()
+                                {
+                                    Field = PropertyName,
+                                    Terms = ((IEnumerable<Guid?>) Value).Select(x => x.ToString())
+                                });
+                                break;
+                        }
+                        break;
+                }
+            }
+
+            return expression;
+        }
         private void AddQueryContainer(QueryContainer query)
         {
             if (query != null) 
