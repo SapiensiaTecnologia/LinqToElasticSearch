@@ -162,5 +162,41 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
             //Then
             listResults.Count.Should().Be(1); 
         }
+        
+        [Fact]
+        public void WhereGuidContainsEmptyListMustReturnsEmpty()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(3).ToList();
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var guidsWithoutLast = new Guid[]{};
+            var results = Sut.Where(x => guidsWithoutLast.Contains(x.Id.Value));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(0);
+        }
+        
+        [Fact]
+        public void WhereNullableGuidContainsEmptyListMustReturnsEmpty()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(3).ToList();
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var guidsWithoutLast = new Guid?[]{};
+            var results = Sut.Where(x => guidsWithoutLast.Contains(x.Id.Value));
+            var listResults = results.ToList();
+
+            //Then
+            listResults.Count.Should().Be(0);
+        }
     }
 }

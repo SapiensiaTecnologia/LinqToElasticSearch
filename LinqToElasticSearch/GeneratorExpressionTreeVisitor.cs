@@ -402,13 +402,15 @@ namespace LinqToElasticSearch
                                 AddQueryContainer(new TermsQuery()
                                 {
                                     Field = PropertyName,
-                                    Terms = ((IEnumerable<Guid>) Value).Select(x => x.ToString())
+                                    IsVerbatim = true,
+                                    Terms = ((IEnumerable<Guid>) Value).Select(x => x.ToString()).ToList()
                                 });
                                 break;
                             case Type nullableGuidType when nullableGuidType == typeof(Guid?):
                                 AddQueryContainer(new TermsQuery()
                                 {
                                     Field = PropertyName,
+                                    IsVerbatim = true,
                                     Terms = ((IEnumerable<Guid?>) Value).Select(x => x.ToString())
                                 });
                                 break;
