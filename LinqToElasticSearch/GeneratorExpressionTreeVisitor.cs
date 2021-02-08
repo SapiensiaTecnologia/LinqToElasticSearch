@@ -228,6 +228,17 @@ namespace LinqToElasticSearch
                         Value = ConvertEnumValue(typeof(T),PropertyName,Value)
                     });
                     break;
+                
+                case ExpressionType.NotEqual:
+                    _queryContainers.Add(new BoolQuery()
+                    {
+                        MustNot = new QueryContainer[]{new TermQuery()
+                        {
+                            Field = PropertyName,
+                            Value = ConvertEnumValue(typeof(T), PropertyName, Value)
+                        }}
+                    });
+                    break;
             }
         }
 
