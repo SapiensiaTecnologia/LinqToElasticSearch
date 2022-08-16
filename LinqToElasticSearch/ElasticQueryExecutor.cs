@@ -81,6 +81,21 @@ namespace LinqToElasticSearch
                     });
                 }
                 
+                if (queryModel.ResultOperators.Any(x => x is GroupResultOperator))
+                {
+                    var groupResultOperator = (GroupResultOperator) queryModel.ResultOperators.First(x => x is GroupResultOperator);
+                    var fieldRaw = groupResultOperator.KeySelector.ToString().Split('.').Last();
+                    var field = _propertyNameInferrerParser.Parser(fieldRaw);
+
+                    descriptor.Aggregations(aggs =>
+                    {
+                        aggs.Terms(field, t => 
+                            t.Field(field)); 
+
+                        return aggs;
+                    });
+                }
+                
                 return descriptor;
 
             });
@@ -89,6 +104,12 @@ namespace LinqToElasticSearch
             {
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(
                     JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values), Formatting.Indented));
+            }
+            
+            if (queryModel.ResultOperators.Any(x => x is GroupResultOperator))
+            {
+                return JsonConvert.DeserializeObject<IGrouping<string, T>>(
+                    JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
             }
 
             var result = JsonConvert.DeserializeObject<IEnumerable<T>>(

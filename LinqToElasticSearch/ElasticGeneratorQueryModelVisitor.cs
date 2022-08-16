@@ -26,7 +26,7 @@ namespace LinqToElasticSearch
             return QueryAggregator;
         } 
         
-        public override void VisitQueryModel (QueryModel queryModel)
+        public override void VisitQueryModel(QueryModel queryModel)
         {
             queryModel.SelectClause.Accept(this, queryModel);
             queryModel.MainFromClause.Accept(this, queryModel);
@@ -49,7 +49,7 @@ namespace LinqToElasticSearch
             var queryContainers = new GeneratorExpressionTreeVisitor<TU>(_propertyNameInferrerParser)
                 .GetNestExpression(whereClause.Predicate);
             QueryAggregator.QueryContainers.AddRange(queryContainers);
-            base.VisitWhereClause (whereClause, queryModel, index);
+            base.VisitWhereClause(whereClause, queryModel, index);
         }
 
 
@@ -71,7 +71,7 @@ namespace LinqToElasticSearch
             base.VisitResultOperators(resultOperators, queryModel);
         }
         
-        public override void VisitOrderByClause (OrderByClause orderByClause, QueryModel queryModel, int index)
+        public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
         {
             foreach (var ordering in orderByClause.Orderings)
             {
@@ -82,7 +82,13 @@ namespace LinqToElasticSearch
                 QueryAggregator.OrderByExpressions.Add(new OrderProperties(propertyName, type, direction)); 
             }
             
-            base.VisitOrderByClause (orderByClause, queryModel, index);
+            base.VisitOrderByClause(orderByClause, queryModel, index);
+        }
+
+        public override void VisitGroupJoinClause(GroupJoinClause groupJoinClause, QueryModel queryModel, int index)
+        {
+            QueryAggregator.GroupByExpression = new GroupProperty(groupJoinClause.ItemName, groupJoinClause.ItemType);
+            base.VisitGroupJoinClause(groupJoinClause, queryModel, index);
         }
     }
 }
