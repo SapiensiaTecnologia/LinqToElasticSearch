@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,19 +12,19 @@ using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElasticSearch
 {
-    public class ElasticQueryExecutor<T>: IQueryExecutor
+    public class ElasticQueryExecutor<K>: IQueryExecutor
     {
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
-        private readonly ElasticGeneratorQueryModelVisitor<T> _elasticGeneratorQueryModelVisitor;
+        private readonly ElasticGeneratorQueryModelVisitor<K> _elasticGeneratorQueryModelVisitor;
 
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
             _elasticClient = elasticClient;
             _dataId = dataId;
             _propertyNameInferrerParser = new PropertyNameInferrerParser(_elasticClient);
-            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<T>(_propertyNameInferrerParser);
+            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<K>(_propertyNameInferrerParser);
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
@@ -95,6 +97,22 @@ namespace LinqToElasticSearch
                         return aggs;
                     });
                 }
+
+                if (queryAggregator.GroupByExpressions.Any())
+                {
+                    foreach (var groupByExpression in queryAggregator.GroupByExpressions)
+                    {
+                        var property = _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) +
+                                       groupByExpression.GetKeywordIfNecessary();
+                        
+                        descriptor.Aggregations(a => a
+                            .Terms($"group_by_{groupByExpression.PropertyName}", t => 
+                                t.Field(property)
+                                .Aggregations(aa => aa.TopHits($"data_{groupByExpression.PropertyName}", th => th)))
+                        );
+                    }
+                    
+                }
                 
                 return descriptor;
 
@@ -110,6 +128,28 @@ namespace LinqToElasticSearch
             {
                 return JsonConvert.DeserializeObject<IGrouping<string, T>>(
                     JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
+            }
+
+            if (queryAggregator.GroupByExpressions.Any())
+            {
+                var groupByExpression = queryAggregator.GroupByExpressions.First();
+                
+                var groupBy = documents.Aggregations.Terms($"group_by_{groupByExpression.PropertyName}");
+                var values = new List<Grouping<T>>();
+
+                var deserializer = new Func<object, T>(input => 
+                    JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+
+                foreach(var bucket in groupBy.Buckets)
+                {
+                    //var group = new Grouping<T>(bucket.Key, bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>());
+                    var list = bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>();
+                    //values.Add(group);
+                }
+                
+                var groupResult = JsonConvert.DeserializeObject<IEnumerable<IGrouping<string, T>>>(
+                    JsonConvert.SerializeObject(values, Formatting.Indented));
+                return null;
             }
 
             var result = JsonConvert.DeserializeObject<IEnumerable<T>>(
@@ -154,5 +194,29 @@ namespace LinqToElasticSearch
             
             return default(T);
         }
+    }
+
+    public class Grouping<T> : IGrouping<string, T>
+    {
+
+        private readonly IEnumerable<T> _values;
+
+        public Grouping(string key, IEnumerable<T> values)
+        {
+            Key = key;
+            _values = values;
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _values.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public string Key { get; }
     }
 }

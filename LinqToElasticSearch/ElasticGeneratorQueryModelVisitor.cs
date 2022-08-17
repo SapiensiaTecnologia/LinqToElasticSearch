@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Remotion.Linq;
@@ -67,6 +68,13 @@ namespace LinqToElasticSearch
                 {
                     QueryAggregator.Take = takeResultOperator.GetConstantCount();
                 }
+
+                if (resultOperator is GroupResultOperator groupResultOperator)
+                {
+                    var propertyName = groupResultOperator.KeySelector.ToString().Split('.').Last();
+                    var propertyType = groupResultOperator.KeySelector.Type;
+                    QueryAggregator.GroupByExpressions.Add(new GroupByProperties(propertyName, propertyType));
+                }
             }
             base.VisitResultOperators(resultOperators, queryModel);
         }
@@ -83,12 +91,6 @@ namespace LinqToElasticSearch
             }
             
             base.VisitOrderByClause(orderByClause, queryModel, index);
-        }
-
-        public override void VisitGroupJoinClause(GroupJoinClause groupJoinClause, QueryModel queryModel, int index)
-        {
-            QueryAggregator.GroupByExpression = new GroupProperty(groupJoinClause.ItemName, groupJoinClause.ItemType);
-            base.VisitGroupJoinClause(groupJoinClause, queryModel, index);
         }
     }
 }
