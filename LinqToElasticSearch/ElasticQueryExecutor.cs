@@ -82,28 +82,12 @@ namespace LinqToElasticSearch
                         return d;
                     });
                 }
-                
-                if (queryModel.ResultOperators.Any(x => x is GroupResultOperator))
-                {
-                    var groupResultOperator = (GroupResultOperator) queryModel.ResultOperators.First(x => x is GroupResultOperator);
-                    var fieldRaw = groupResultOperator.KeySelector.ToString().Split('.').Last();
-                    var field = _propertyNameInferrerParser.Parser(fieldRaw);
-
-                    descriptor.Aggregations(aggs =>
-                    {
-                        aggs.Terms(field, t => 
-                            t.Field(field)); 
-
-                        return aggs;
-                    });
-                }
 
                 if (queryAggregator.GroupByExpressions.Any())
                 {
                     foreach (var groupByExpression in queryAggregator.GroupByExpressions)
                     {
-                        var property = _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) +
-                                       groupByExpression.GetKeywordIfNecessary();
+                        var property = _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) + groupByExpression.GetKeywordIfNecessary();;
                         
                         descriptor.Aggregations(a => a
                             .Terms($"group_by_{groupByExpression.PropertyName}", t => 
@@ -123,33 +107,25 @@ namespace LinqToElasticSearch
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(
                     JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values), Formatting.Indented));
             }
-            
-            if (queryModel.ResultOperators.Any(x => x is GroupResultOperator))
-            {
-                return JsonConvert.DeserializeObject<IGrouping<string, T>>(
-                    JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
-            }
 
             if (queryAggregator.GroupByExpressions.Any())
             {
                 var groupByExpression = queryAggregator.GroupByExpressions.First();
                 
                 var groupBy = documents.Aggregations.Terms($"group_by_{groupByExpression.PropertyName}");
-                var values = new List<Grouping<T>>();
+                var values = new List<IGrouping<string, K>>();
 
-                var deserializer = new Func<object, T>(input => 
-                    JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+                var deserializer = new Func<object, K>(input => 
+                    JsonConvert.DeserializeObject<K>(JsonConvert.SerializeObject(input, Formatting.Indented)));
 
                 foreach(var bucket in groupBy.Buckets)
                 {
-                    //var group = new Grouping<T>(bucket.Key, bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>());
-                    var list = bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>();
-                    //values.Add(group);
+                    var list = bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>().Select(deserializer);
+                    var group = new Grouping<K>(bucket.Key, list);
+                    values.Add(group);
                 }
                 
-                var groupResult = JsonConvert.DeserializeObject<IEnumerable<IGrouping<string, T>>>(
-                    JsonConvert.SerializeObject(values, Formatting.Indented));
-                return null;
+                return values.Cast<T>();
             }
 
             var result = JsonConvert.DeserializeObject<IEnumerable<T>>(
