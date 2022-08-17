@@ -44,19 +44,21 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses
         public void GroupByStringEqualWithMultipleGrouping()
         {
             //Given
-            var datas = Fixture.CreateMany<SampleData>(3).ToList();
+            var datas = Fixture.CreateMany<SampleData>(4).ToList();
             datas[0].Name = "abcdef";
             datas[0].Can = true;
             datas[1].Name = "abcdef";
             datas[1].Can = true;
             datas[2].Name = "abcdef";
             datas[2].Can = false;
+            datas[3].Name = "1abcdef";
+            datas[3].Can = false;
 
             Bulk(datas);
             ElasticClient.Indices.Refresh();
 
             //When
-            var results = Sut.GroupBy(x => new {x.Name, x.Can });
+            var results = Sut.GroupBy(x => new {x.Name, x.Can});
             var listResults = results.ToList();
             
             //Then

@@ -71,11 +71,15 @@ namespace LinqToElasticSearch
 
                 if (resultOperator is GroupResultOperator groupResultOperator)
                 {
-                    var propertyName = groupResultOperator.KeySelector.ToString().Split('.').Last();
-                    var propertyType = groupResultOperator.KeySelector.Type;
-                    QueryAggregator.GroupByExpressions.Add(new GroupByProperties(propertyName, propertyType));
+                    var properties = groupResultOperator.KeySelector.Type.GetProperties().ToList();
+                    properties.ForEach(property =>
+                    {
+                        QueryAggregator.GroupByExpressions.Add(new GroupByProperties(property.Name, property.PropertyType));
+                    });
+                    
                 }
             }
+            
             base.VisitResultOperators(resultOperators, queryModel);
         }
         

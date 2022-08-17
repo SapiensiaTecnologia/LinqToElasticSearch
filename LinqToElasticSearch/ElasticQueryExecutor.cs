@@ -85,17 +85,72 @@ namespace LinqToElasticSearch
 
                 if (queryAggregator.GroupByExpressions.Any())
                 {
-                    foreach (var groupByExpression in queryAggregator.GroupByExpressions)
+                    descriptor.Aggregations(a =>
                     {
-                        var property = _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) + groupByExpression.GetKeywordIfNecessary();;
-                        
-                        descriptor.Aggregations(a => a
-                            .Terms($"group_by_{groupByExpression.PropertyName}", t => 
+                        if (queryAggregator.GroupByExpressions.Count == 1)
+                        {
+                            var groupByExpression = queryAggregator.GroupByExpressions.First();
+                            var property = _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) + groupByExpression.GetKeywordIfNecessary();
+
+                            a.Terms($"group_by_{groupByExpression.PropertyName}", t =>
                                 t.Field(property)
-                                .Aggregations(aa => aa.TopHits($"data_{groupByExpression.PropertyName}", th => th)))
-                        );
-                    }
-                    
+                                    .Aggregations(aa =>
+                                        aa.TopHits($"data_{groupByExpression.PropertyName}", th => th)));
+                        }
+                        else
+                        {
+
+                            /*
+                            queryAggregator.GroupByExpressions.ForEach(groupByExpression =>
+                            {
+                                var property =
+                                    _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) +
+                                    groupByExpression.GetKeywordIfNecessary();
+                                
+                                a.Terms($"group_by_{groupByExpression.PropertyName}", t =>
+                                {
+                                    t.Field(property).Aggregations(aa => aa.TopHits($"data_{groupByExpression.PropertyName}", th => th));
+                                    return t;
+                                });
+                            });*/
+                                   
+
+                            a.Composite("composite", c =>
+                                    c.Sources(so =>
+                                    {
+                                        queryAggregator.GroupByExpressions.ForEach(gbe =>
+                                        {
+                                            var property = _propertyNameInferrerParser.Parser(gbe.PropertyName) + gbe.GetKeywordIfNecessary();
+                                            so.Terms($"group_by_{gbe.PropertyName}", t => t.Field(property));
+                                        });
+
+                                        return so;
+                                    })
+                                    .Aggregations(aa => aa
+                                        .TopHits("data_composite", th => th)   
+                                    )
+                                );
+                        }
+
+                        return a;
+                    });
+                    /*descriptor.Aggregations(a => a
+                        .Terms("group_by", t =>
+                        {
+                            queryAggregator.GroupByExpressions.ForEach(groupByExpression =>
+                            {
+                                var property = _propertyNameInferrerParser.Parser(groupByExpression.PropertyName) + groupByExpression.GetKeywordIfNecessary();;
+                                t.Field(property).Aggregations(aa => aa);
+                            });
+
+                            var last = queryAggregator.GroupByExpressions.Last();
+                            t.Aggregations(aa => aa.TopHits($"data_{last.PropertyName}", th => th));
+                            
+                            return t;
+                        })
+                    );
+                    */
+
                 }
                 
                 return descriptor;
@@ -110,19 +165,34 @@ namespace LinqToElasticSearch
 
             if (queryAggregator.GroupByExpressions.Any())
             {
-                var groupByExpression = queryAggregator.GroupByExpressions.First();
-                
-                var groupBy = documents.Aggregations.Terms($"group_by_{groupByExpression.PropertyName}");
-                var values = new List<IGrouping<string, K>>();
-
                 var deserializer = new Func<object, K>(input => 
                     JsonConvert.DeserializeObject<K>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+                
+                var values = new List<IGrouping<string, K>>();
 
-                foreach(var bucket in groupBy.Buckets)
+                if (queryAggregator.GroupByExpressions.Count == 1)
                 {
-                    var list = bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>().Select(deserializer);
-                    var group = new Grouping<K>(bucket.Key, list);
-                    values.Add(group);
+                    var groupByExpression = queryAggregator.GroupByExpressions.First();
+                    var groupBy = documents.Aggregations.Terms($"group_by_{groupByExpression}");
+
+                    foreach(var bucket in groupBy.Buckets)
+                    {
+                        var list = bucket.TopHits($"data_{groupByExpression.PropertyName}").Documents<object>().Select(deserializer);
+                        var group = new Grouping<K>(bucket.Key, list);
+                        values.Add(group);
+                    }
+                }
+                else
+                {
+                    var composite = documents.Aggregations.Composite("composite");
+                
+                    foreach(var bucket in composite.Buckets)
+                    {
+                        var key = string.Join("/", bucket.Key.Values);
+                        var list = bucket.TopHits("data_composite").Documents<object>().Select(deserializer);
+                        var group = new Grouping<K>(key, list);
+                        values.Add(group);
+                    }
                 }
                 
                 return values.Cast<T>();
