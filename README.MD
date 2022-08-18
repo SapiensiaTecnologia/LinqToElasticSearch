@@ -27,3 +27,4 @@ This Library has compatibility with Elasticsearch .Net & NEST Client and Elastic
 * OrderBy
 * Skip
 * Take
+* GroupBy
