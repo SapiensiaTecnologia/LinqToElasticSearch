@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using Nest;
@@ -10,19 +14,19 @@ using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElasticSearch
 {
-    public class ElasticQueryExecutor<T>: IQueryExecutor
+    public class ElasticQueryExecutor<TK>: IQueryExecutor
     {
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
-        private readonly ElasticGeneratorQueryModelVisitor<T> _elasticGeneratorQueryModelVisitor;
+        private readonly ElasticGeneratorQueryModelVisitor<TK> _elasticGeneratorQueryModelVisitor;
 
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
             _elasticClient = elasticClient;
             _dataId = dataId;
             _propertyNameInferrerParser = new PropertyNameInferrerParser(_elasticClient);
-            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<T>(_propertyNameInferrerParser);
+            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<TK>(_propertyNameInferrerParser);
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
@@ -80,6 +84,32 @@ namespace LinqToElasticSearch
                         return d;
                     });
                 }
+
+                if (queryAggregator.GroupByExpressions.Any())
+                {
+                    descriptor.Aggregations(a =>
+                    {
+
+                        a.Composite("composite", c =>
+                                c.Sources(so =>
+                                {
+                                    queryAggregator.GroupByExpressions.ForEach(gbe =>
+                                    {
+                                        var property = _propertyNameInferrerParser.Parser(gbe.PropertyName) + gbe.GetKeywordIfNecessary();
+                                        so.Terms($"group_by_{gbe.PropertyName}", t => t.Field(property));
+                                    });
+
+                                    return so;
+                                })
+                                .Aggregations(aa => aa
+                                    .TopHits("data_composite", th => th)   
+                                )
+                            );
+
+                        return a;
+                    });
+
+                }
                 
                 return descriptor;
 
@@ -89,6 +119,34 @@ namespace LinqToElasticSearch
             {
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(
                     JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values), Formatting.Indented));
+            }
+
+            if (queryAggregator.GroupByExpressions.Any())
+            {
+                var docDeserializer = new Func<object, TK>(input => 
+                    JsonConvert.DeserializeObject<TK>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+
+                var originalGroupingType = queryModel.GetResultType().GenericTypeArguments.First();
+                var originalGroupingGenerics = originalGroupingType.GetGenericArguments();
+                var originalKeyGenerics = originalGroupingGenerics.First();
+
+                var genericListType = typeof(List<>).MakeGenericType(originalGroupingType);
+                var values = (IList)Activator.CreateInstance(genericListType);
+                
+                var composite = documents.Aggregations.Composite("composite");
+            
+                foreach(var bucket in composite.Buckets)
+                {
+                    var key = GenerateKey(bucket.Key, originalKeyGenerics);
+                    var list = bucket.TopHits("data_composite").Documents<object>().Select(docDeserializer).ToList();
+
+                    var grouping = typeof(Grouping<,>);
+                    var groupingGenerics = grouping.MakeGenericType(originalGroupingGenerics);
+                    var groupingInstance = Activator.CreateInstance(groupingGenerics, key, list);
+                    values.Add(groupingInstance);
+                }
+                
+                return values.Cast<T>();
             }
 
             var result = JsonConvert.DeserializeObject<IEnumerable<T>>(
@@ -104,7 +162,7 @@ namespace LinqToElasticSearch
             return returnDefaultWhenEmpty ? sequence.SingleOrDefault() : sequence.Single();
         }
 
-        public T ExecuteScalar<T>(QueryModel queryModel)                
+        public T ExecuteScalar<T>(QueryModel queryModel) 
         {
             var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery<T>(queryModel);
 
@@ -132,6 +190,66 @@ namespace LinqToElasticSearch
             }
             
             return default(T);
+        }
+
+        private dynamic GenerateKey(CompositeKey ck, Type keyGenerics)
+        {
+            if (keyGenerics.IsConstructedGenericType == false)
+            {
+                if (keyGenerics == typeof(DateTime))
+                {            
+                    var date = (long) ck.Values.First();
+                    return FormatDateTimeKey(date);
+                }
+                return ck.Values.First();
+            }
+            
+            IDictionary<string, object> expando = new ExpandoObject();
+            foreach (var entry in ck)
+            {
+                var key = entry.Key.Replace("group_by_", "");
+                var type = keyGenerics.GetProperties().First(x => x.Name == key).PropertyType;
+                
+                if (type == typeof(DateTime))
+                {            
+                    var date = (long) entry.Value;
+                    expando[key] = FormatDateTimeKey(date);
+                    continue;
+                }
+                
+                expando[key] = entry.Value;
+            }
+
+            return JsonConvert.DeserializeObject(JsonConvert.SerializeObject(expando), keyGenerics);
+        }
+
+        private static DateTime FormatDateTimeKey(long d)
+        {
+            var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            return date.AddMilliseconds(d).ToLocalTime();
+        }
+    }
+
+    public class Grouping<TKey, TElem> : IGrouping<TKey, TElem>
+    {
+        public TKey Key { get; }
+        
+        private readonly IEnumerable<TElem> _values;
+
+        public Grouping(TKey key, IEnumerable<TElem> values)
+        {
+            Key = key;
+            _values = values;
+        }
+
+        public IEnumerator<TElem> GetEnumerator()
+        {
+            return _values.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

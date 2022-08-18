@@ -12,6 +12,7 @@ namespace LinqToElasticSearch
         public int? Skip { get; set; }
         public List<string> PropertiesToSelect = new List<string>();
         public List<OrderProperties> OrderByExpressions = new List<OrderProperties>();
+        public List<GroupByProperties> GroupByExpressions = new List<GroupByProperties>();
     }
 
     public class OrderProperties
@@ -28,6 +29,23 @@ namespace LinqToElasticSearch
             OrderingDirection = direction;
         }
 
+        public string GetKeywordIfNecessary()
+        {
+            return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
+        }
+    }
+
+    public class GroupByProperties
+    {
+        public string PropertyName { get; }
+        public Type PropertyType { get; set; }
+
+        public GroupByProperties(string propertyName, Type propertyType)
+        {
+            PropertyName = propertyName;
+            PropertyType = propertyType;
+        }
+        
         public string GetKeywordIfNecessary()
         {
             return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
