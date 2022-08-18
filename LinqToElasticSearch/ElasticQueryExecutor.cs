@@ -212,7 +212,7 @@ namespace LinqToElasticSearch
                 
                 if (type == typeof(DateTime))
                 {            
-                    long date = (long) entry.Value;
+                    var date = (long) entry.Value;
                     expando[key] = FormatDateTimeKey(date);
                     continue;
                 }
