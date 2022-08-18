@@ -4,7 +4,7 @@ using AutoFixture;
 using FluentAssertions;
 using Xunit;
 
-namespace LinqToElasticSearch.IntegrationTests.Clauses
+namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
 {
     
     public class GroupByDateTests : IntegrationTestsBase<SampleData>

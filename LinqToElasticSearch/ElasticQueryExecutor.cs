@@ -198,7 +198,7 @@ namespace LinqToElasticSearch
             {
                 if (keyGenerics == typeof(DateTime))
                 {            
-                    long date = (long) ck.Values.First();
+                    var date = (long) ck.Values.First();
                     return FormatDateTimeKey(date);
                 }
                 return ck.Values.First();
@@ -223,7 +223,7 @@ namespace LinqToElasticSearch
             return JsonConvert.DeserializeObject(JsonConvert.SerializeObject(expando), keyGenerics);
         }
 
-        private static dynamic FormatDateTimeKey(long d)
+        private static DateTime FormatDateTimeKey(long d)
         {
             var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local);
             return date.AddMilliseconds(d).ToLocalTime();

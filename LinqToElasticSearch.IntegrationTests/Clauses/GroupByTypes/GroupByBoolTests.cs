@@ -3,7 +3,7 @@ using AutoFixture;
 using FluentAssertions;
 using Xunit;
 
-namespace LinqToElasticSearch.IntegrationTests.Clauses
+namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
 {
     
     public class GroupByBoolTests : IntegrationTestsBase<SampleData>
