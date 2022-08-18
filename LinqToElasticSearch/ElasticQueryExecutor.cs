@@ -197,10 +197,9 @@ namespace LinqToElasticSearch
             if (keyGenerics.IsConstructedGenericType == false)
             {
                 if (keyGenerics == typeof(DateTime))
-                {
-                    var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                    long d = (long) ck.Values.First();
-                    return date.AddMilliseconds(d).ToLocalTime();
+                {            
+                    long date = (long) ck.Values.First();
+                    return FormatDateTimeKey(date);
                 }
                 return ck.Values.First();
             }
@@ -209,10 +208,25 @@ namespace LinqToElasticSearch
             foreach (var entry in ck)
             {
                 var key = entry.Key.Replace("group_by_", "");
+                var type = keyGenerics.GetProperties().First(x => x.Name == key).PropertyType;
+                
+                if (type == typeof(DateTime))
+                {            
+                    long date = (long) entry.Value;
+                    expando[key] = FormatDateTimeKey(date);
+                    continue;
+                }
+                
                 expando[key] = entry.Value;
             }
 
             return JsonConvert.DeserializeObject(JsonConvert.SerializeObject(expando), keyGenerics);
+        }
+
+        private static dynamic FormatDateTimeKey(long d)
+        {
+            var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            return date.AddMilliseconds(d).ToLocalTime();
         }
     }
 
