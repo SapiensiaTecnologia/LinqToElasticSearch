@@ -194,8 +194,14 @@ namespace LinqToElasticSearch
 
         private dynamic GenerateKey(CompositeKey ck, Type keyGenerics)
         {
-            if (keyGenerics == typeof(string))
+            if (keyGenerics.IsConstructedGenericType == false)
             {
+                if (keyGenerics == typeof(DateTime))
+                {
+                    var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                    long d = (long) ck.Values.First();
+                    return date.AddMilliseconds(d).ToLocalTime();
+                }
                 return ck.Values.First();
             }
             
