@@ -128,6 +128,7 @@ namespace LinqToElasticSearch
 
                 var originalGroupingType = queryModel.GetResultType().GenericTypeArguments.First();
                 var originalGroupingGenerics = originalGroupingType.GetGenericArguments();
+                var originalKeyGenerics = originalGroupingGenerics.First();
 
                 var genericListType = typeof(List<>).MakeGenericType(originalGroupingType);
                 var values = (IList)Activator.CreateInstance(genericListType);
@@ -136,7 +137,7 @@ namespace LinqToElasticSearch
             
                 foreach(var bucket in composite.Buckets)
                 {
-                    var key = GenerateKey(bucket.Key);
+                    var key = GenerateKey(bucket.Key, originalKeyGenerics);
                     var list = bucket.TopHits("data_composite").Documents<object>().Select(docDeserializer).ToList();
 
                     var grouping = typeof(Grouping<,>);
@@ -191,8 +192,13 @@ namespace LinqToElasticSearch
             return default(T);
         }
 
-        private dynamic GenerateKey(CompositeKey ck)
+        private dynamic GenerateKey(CompositeKey ck, Type keyGenerics)
         {
+            if (keyGenerics == typeof(string))
+            {
+                return ck.Values.First();
+            }
+            
             IDictionary<string, object> expando = new ExpandoObject();
             foreach (var entry in ck)
             {
@@ -200,7 +206,7 @@ namespace LinqToElasticSearch
                 expando[key] = entry.Value;
             }
 
-            return expando;
+            return JsonConvert.DeserializeObject(JsonConvert.SerializeObject(expando), keyGenerics);
         }
     }
 

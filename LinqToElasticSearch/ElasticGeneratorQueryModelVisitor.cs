@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
@@ -71,12 +72,24 @@ namespace LinqToElasticSearch
 
                 if (resultOperator is GroupResultOperator groupResultOperator)
                 {
-                    var properties = groupResultOperator.KeySelector.Type.GetProperties().ToList();
-                    properties.ForEach(property =>
-                    {
-                        QueryAggregator.GroupByExpressions.Add(new GroupByProperties(property.Name, property.PropertyType));
-                    });
+                    var members = new List<Tuple<string, Type>>();
                     
+                    switch (groupResultOperator.KeySelector)
+                    {
+                        case MemberExpression memberExpression:
+                            members.Add(new Tuple<string, Type>(memberExpression.Member.Name, memberExpression.Type));
+                            break;
+                        case NewExpression newExpression:
+                            members.AddRange(newExpression.Arguments
+                                .Cast<MemberExpression>()
+                                .Select(memberExpression => new Tuple<string, Type>(memberExpression.Member.Name, memberExpression.Type)));
+                            break;
+                    }
+                    
+                    members.ForEach(property =>
+                    {
+                        QueryAggregator.GroupByExpressions.Add(new GroupByProperties(property.Item1, property.Item2));
+                    });
                 }
             }
             

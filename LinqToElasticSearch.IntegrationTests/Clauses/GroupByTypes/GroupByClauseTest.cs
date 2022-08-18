@@ -32,12 +32,16 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses
             ElasticClient.Indices.Refresh();
             
             //When
-            var results = Sut.GroupBy(x => x.Name);
-            var listResults = results.ToList();
+            var results = Sut.GroupBy(x => x.Name).ToList();
             
             //Then
-            listResults.Count.Should().Be(2);
-            listResults[0].Key.Should().Be(datas[1].Name);
+            results.Count.Should().Be(2);
+            results.Should().ContainSingle(x =>
+                x.Key == "abcdef"
+                && x.Count() == 3);
+            results.Should().ContainSingle(x =>
+                x.Key == datas[3].Name
+                && x.Count() == 1);
         }
 
         [Fact]
@@ -58,12 +62,25 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses
             ElasticClient.Indices.Refresh();
 
             //When
-            var results = Sut.GroupBy(x => new {x.Name, x.Can});
-            var listResults = results.ToList();
+            var results = Sut.GroupBy(x => new {x.Name, x.Can}).ToList();
             
             //Then
-            listResults.Count.Should().Be(1);
-            listResults[0].Key.Should().Be(datas[1].Name);
+            results.Count.Should().Be(3);
+            results.Should().ContainSingle(x =>
+                x.Key.Name == "abcdef"
+                && x.Key.Can == true
+                && x.Count() == 2);
+            results.Should().ContainSingle(x =>
+                x.Key.Name == "abcdef"
+                && x.Key.Can == false
+                && x.Count() == 1);
+            results.Should().ContainSingle(x =>
+                x.Key.Name == "1abcdef"
+                && x.Key.Can == false
+                && x.Count() == 1);
+            results.Should().NotContain(x =>
+                x.Key.Name == "1abcdef"
+                && x.Key.Can == true);
         }
         
         
