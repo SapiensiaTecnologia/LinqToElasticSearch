@@ -1,23 +1,12 @@
-﻿using System;
-using System.Linq;
-using System.Linq.Dynamic.Core;
+﻿using System.Linq;
 using AutoFixture;
-using Elasticsearch.Net;
 using FluentAssertions;
-using Nest;
 using Xunit;
 
 namespace LinqToElasticSearch.IntegrationTests.Clauses
 {
-    [Serializable]
-    public class TestElasticGroup
-    {
-        [StringEnum]
-        [Keyword]
-        public string Name { get; set; }
-    }
     
-    public class GroupByClauseTest : IntegrationTestsBase<SampleData>
+    public class GroupByStringTests : IntegrationTestsBase<SampleData>
     {
         
         [Fact]
