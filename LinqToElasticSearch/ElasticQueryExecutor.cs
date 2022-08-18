@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using Nest;
@@ -12,19 +14,19 @@ using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElasticSearch
 {
-    public class ElasticQueryExecutor<K>: IQueryExecutor
+    public class ElasticQueryExecutor<TK>: IQueryExecutor
     {
         private readonly IElasticClient _elasticClient;
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
-        private readonly ElasticGeneratorQueryModelVisitor<K> _elasticGeneratorQueryModelVisitor;
+        private readonly ElasticGeneratorQueryModelVisitor<TK> _elasticGeneratorQueryModelVisitor;
 
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
             _elasticClient = elasticClient;
             _dataId = dataId;
             _propertyNameInferrerParser = new PropertyNameInferrerParser(_elasticClient);
-            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<K>(_propertyNameInferrerParser);
+            _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<TK>(_propertyNameInferrerParser);
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
@@ -121,18 +123,26 @@ namespace LinqToElasticSearch
 
             if (queryAggregator.GroupByExpressions.Any())
             {
-                var deserializer = new Func<object, K>(input => 
-                    JsonConvert.DeserializeObject<K>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+                var docDeserializer = new Func<object, TK>(input => 
+                    JsonConvert.DeserializeObject<TK>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+
+                var originalGroupingType = queryModel.GetResultType().GenericTypeArguments.First();
+                var originalGroupingGenerics = originalGroupingType.GetGenericArguments();
+
+                var genericListType = typeof(List<>).MakeGenericType(originalGroupingType);
+                var values = (IList)Activator.CreateInstance(genericListType);
                 
-                var values = new List<IGrouping<object, K>>();
                 var composite = documents.Aggregations.Composite("composite");
             
                 foreach(var bucket in composite.Buckets)
                 {
-                    var key = string.Join("/", bucket.Key.Values);
-                    var list = bucket.TopHits("data_composite").Documents<object>().Select(deserializer);
-                    var group = new Grouping<K>(key, list);
-                    values.Add(group);
+                    var key = GenerateKey(bucket.Key);
+                    var list = bucket.TopHits("data_composite").Documents<object>().Select(docDeserializer).ToList();
+
+                    var grouping = typeof(Grouping<,>);
+                    var groupingGenerics = grouping.MakeGenericType(originalGroupingGenerics);
+                    var groupingInstance = Activator.CreateInstance(groupingGenerics, key, list);
+                    values.Add(groupingInstance);
                 }
                 
                 return values.Cast<T>();
@@ -151,7 +161,7 @@ namespace LinqToElasticSearch
             return returnDefaultWhenEmpty ? sequence.SingleOrDefault() : sequence.Single();
         }
 
-        public T ExecuteScalar<T>(QueryModel queryModel)                
+        public T ExecuteScalar<T>(QueryModel queryModel) 
         {
             var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery<T>(queryModel);
 
@@ -180,20 +190,33 @@ namespace LinqToElasticSearch
             
             return default(T);
         }
+
+        private dynamic GenerateKey(CompositeKey ck)
+        {
+            IDictionary<string, object> expando = new ExpandoObject();
+            foreach (var entry in ck)
+            {
+                var key = entry.Key.Replace("group_by_", "");
+                expando[key] = entry.Value;
+            }
+
+            return expando;
+        }
     }
 
-    public class Grouping<T> : IGrouping<object, T>
+    public class Grouping<TKey, TElem> : IGrouping<TKey, TElem>
     {
+        public TKey Key { get; }
+        
+        private readonly IEnumerable<TElem> _values;
 
-        private readonly IEnumerable<T> _values;
-
-        public Grouping(object key, IEnumerable<T> values)
+        public Grouping(TKey key, IEnumerable<TElem> values)
         {
             Key = key;
             _values = values;
         }
 
-        public IEnumerator<T> GetEnumerator()
+        public IEnumerator<TElem> GetEnumerator()
         {
             return _values.GetEnumerator();
         }
@@ -202,7 +225,5 @@ namespace LinqToElasticSearch
         {
             return GetEnumerator();
         }
-
-        public object Key { get; }
     }
 }
