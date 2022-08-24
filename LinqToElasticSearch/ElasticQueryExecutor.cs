@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Dynamic;
 using System.Linq;
@@ -208,9 +207,9 @@ namespace LinqToElasticSearch
             foreach (var entry in ck)
             {
                 var key = entry.Key.Replace("group_by_", "");
-                var type = keyGenerics.GetProperties().First(x => x.Name == key).PropertyType;
+                var type = keyGenerics.GetProperties().FirstOrDefault(x => x.Name == key)?.PropertyType;
                 
-                if (type == typeof(DateTime))
+                if (type != null && type == typeof(DateTime))
                 {            
                     var date = (long) entry.Value;
                     expando[key] = FormatDateTimeKey(date);
