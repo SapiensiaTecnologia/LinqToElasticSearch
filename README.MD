@@ -27,4 +27,5 @@ This Library has compatibility with Elasticsearch .Net & NEST Client and Elastic
 * OrderBy
 * Skip
 * Take
-* GroupBy
+* GroupBy(x => x.Prop1)
+* GroupBy(x => new {x.Prop1, x.Prop2})

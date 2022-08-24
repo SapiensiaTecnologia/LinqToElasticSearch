@@ -16,8 +16,12 @@ namespace LinqToElasticSearch.IntegrationTests
         protected IntegrationTestsBase()
         {
             Fixture = new Fixture();
+
+            var server = GetSettingsValue("ElasticSearch.ReadModelNodeList", "http://localhost:9200");
+            var username = GetSettingsValue("ElasticSearch.UserName", "");
+            var password = GetSettingsValue("ElasticSearch.Password", "");
             
-            ElasticClient = ElasticClientFactory.CreateElasticClient("http://localhost:9200", "", ""); 
+            ElasticClient = ElasticClientFactory.CreateElasticClient(server, username, password);
             
             if (ElasticClient.Indices.Exists(IndexName).Exists)
             {
@@ -39,11 +43,15 @@ namespace LinqToElasticSearch.IntegrationTests
         {
             ElasticClient.Index(data, descriptor => descriptor.Index(IndexName));
         }
-
-
+        
         public void Dispose()
         {
             ElasticClient.Indices.Delete(IndexName); 
+        }
+
+        private string GetSettingsValue(string key, string defaultValue)
+        {
+            return Environment.GetEnvironmentVariable(key) ?? defaultValue;
         }
     }
 }

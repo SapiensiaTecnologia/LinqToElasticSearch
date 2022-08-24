@@ -103,7 +103,7 @@ namespace LinqToElasticSearch
                 var memberExpression = (MemberExpression) ordering.Expression;
                 var direction = orderByClause.Orderings[0].OrderingDirection;
                 var propertyName = memberExpression.Member.Name;
-                var type = ((PropertyInfo) memberExpression.Member).PropertyType;
+                var type = memberExpression.Type;
                 QueryAggregator.OrderByExpressions.Add(new OrderProperties(propertyName, type, direction)); 
             }
             
