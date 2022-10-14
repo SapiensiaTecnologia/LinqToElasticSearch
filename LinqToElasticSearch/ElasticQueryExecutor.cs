@@ -19,7 +19,8 @@ namespace LinqToElasticSearch
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private readonly ElasticGeneratorQueryModelVisitor<TK> _elasticGeneratorQueryModelVisitor;
-
+        private const int ElasticQueryLimit = 10000;
+            
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
         {
             _elasticClient = elasticClient;
@@ -47,7 +48,7 @@ namespace LinqToElasticSearch
                 }
                 else
                 {
-                    descriptor.Size(10000);
+                    descriptor.Size(ElasticQueryLimit);
                 }
 
                 if (queryAggregator.Take != null)
@@ -179,7 +180,12 @@ namespace LinqToElasticSearch
                         }
                         return descriptor;
                     }).Count;
-            
+
+                    if (result > ElasticQueryLimit)
+                    {
+                        result = ElasticQueryLimit;
+                    }
+                    
                     var converter = TypeDescriptor.GetConverter(typeof(T));
                     if (converter.CanConvertFrom(typeof(string)))
                     {

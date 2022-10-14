@@ -45,5 +45,22 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses
             //Then
             results.Should().Be(1);
         }
+
+        [Fact]
+        public void CountWithMoreThan10000Objects()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(10006);
+
+            Bulk(datas);
+            
+            ElasticClient.Indices.Refresh();
+            
+            //When
+            var results = Sut.Count();
+
+            //Then
+            results.Should().Be(10000);
+        }
     }
 }
