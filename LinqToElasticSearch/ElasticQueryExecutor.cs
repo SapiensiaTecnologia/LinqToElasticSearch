@@ -54,9 +54,11 @@ namespace LinqToElasticSearch
                 if (queryAggregator.Take != null)
                 {
                     var take = queryAggregator.Take.Value;
-                    if (queryAggregator.Skip.Value + take > ElasticQueryLimit)
+                    var skip = queryAggregator.Skip ?? 0;
+                    
+                    if (skip + take > ElasticQueryLimit)
                     {
-                        var exceedCount = queryAggregator.Skip.Value + take - ElasticQueryLimit;
+                        var exceedCount = skip + take - ElasticQueryLimit;
                         take -= exceedCount;
                     }
                     
