@@ -53,8 +53,17 @@ namespace LinqToElasticSearch
 
                 if (queryAggregator.Take != null)
                 {
-                    descriptor.Take(queryAggregator.Take);
-                    descriptor.Size(queryAggregator.Take);
+                    var take = queryAggregator.Take.Value;
+                    var skip = queryAggregator.Skip ?? 0;
+                    
+                    if (skip + take > ElasticQueryLimit)
+                    {
+                        var exceedCount = skip + take - ElasticQueryLimit;
+                        take -= exceedCount;
+                    }
+                    
+                    descriptor.Take(take);
+                    descriptor.Size(take);
                 }
                 
                 if (queryAggregator.QueryContainers.Any())
