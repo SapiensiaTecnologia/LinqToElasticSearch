@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Nest;
 using Remotion.Linq.Clauses;
+using LinqToElasticSearch.Extensions;
 
 namespace LinqToElasticSearch
 {
@@ -31,7 +32,7 @@ namespace LinqToElasticSearch
 
         public string GetKeywordIfNecessary()
         {
-            return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
+            return PropertyType.Name.Contains("string", StringComparison.OrdinalIgnoreCase) ? ".keyword" : "";
         }
     }
 
@@ -48,7 +49,9 @@ namespace LinqToElasticSearch
         
         public string GetKeywordIfNecessary()
         {
-            return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
+            return PropertyType.Name.Contains("string", StringComparison.OrdinalIgnoreCase) ? ".keyword" : "";
         }
     }
+    
+    
 }

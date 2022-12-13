@@ -48,7 +48,14 @@ namespace LinqToElasticSearch
                 }
                 else
                 {
-                    descriptor.Size(ElasticQueryLimit);
+                    if (queryModel.ResultOperators.Any(x => x is FirstResultOperator || x is SingleResultOperator))
+                    {
+                        descriptor.Size(1);
+                    }
+                    else
+                    {
+                        descriptor.Size(ElasticQueryLimit);
+                    }
                 }
 
                 if (queryAggregator.Take != null)
