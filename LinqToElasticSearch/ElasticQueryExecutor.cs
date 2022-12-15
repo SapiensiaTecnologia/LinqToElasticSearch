@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
+using LinqToElasticSearch.Extensions;
 using Nest;
 using Newtonsoft.Json;
 using Remotion.Linq;
@@ -32,104 +34,7 @@ namespace LinqToElasticSearch
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
             var queryAggregator = _elasticGeneratorQueryModelVisitor.GenerateElasticQuery<T>(queryModel);
-
-            var documents= _elasticClient.Search<IDictionary<string, object>>(descriptor =>
-            {
-                descriptor.Index(_dataId);
-
-                if (queryModel.SelectClause != null && queryModel.SelectClause.Selector is MemberExpression memberExpression)
-                {
-                    descriptor.Source(x => x.Includes(f => f.Field(_propertyNameInferrerParser.Parser(memberExpression.Member.Name))));
-                }
-
-                if (queryAggregator.Skip != null)
-                {
-                    descriptor.From(queryAggregator.Skip);
-                }
-                else
-                {
-                    if (queryModel.ResultOperators.Any(x => x is FirstResultOperator || x is SingleResultOperator))
-                    {
-                        descriptor.Size(1);
-                    }
-                    else
-                    {
-                        descriptor.Size(ElasticQueryLimit);
-                    }
-                }
-
-                if (queryAggregator.Take != null)
-                {
-                    var take = queryAggregator.Take.Value;
-                    var skip = queryAggregator.Skip ?? 0;
-                    
-                    if (skip + take > ElasticQueryLimit)
-                    {
-                        var exceedCount = skip + take - ElasticQueryLimit;
-                        take -= exceedCount;
-                    }
-                    
-                    descriptor.Take(take);
-                    descriptor.Size(take);
-                }
-                
-                if (queryAggregator.QueryContainers.Any())
-                {
-                    descriptor.Query(q => q.Bool(x => x.Must(queryAggregator.QueryContainers.ToArray())));
-                }
-                else
-                {
-                    descriptor.MatchAll();
-                }
-
-
-                if (queryAggregator.OrderByExpressions.Any())
-                {
-                    descriptor.Sort(d =>
-                    {
-                        foreach (var orderByExpression in queryAggregator.OrderByExpressions)
-                        {
-                            var property = _propertyNameInferrerParser.Parser(orderByExpression.PropertyName) +
-                                           orderByExpression.GetKeywordIfNecessary();
-                            d.Field(property,
-                                orderByExpression.OrderingDirection == OrderingDirection.Asc
-                                    ? SortOrder.Ascending
-                                    : SortOrder.Descending);
-                        }
-
-                        return d;
-                    });
-                }
-
-                if (queryAggregator.GroupByExpressions.Any())
-                {
-                    descriptor.Aggregations(a =>
-                    {
-
-                        a.Composite("composite", c =>
-                                c.Sources(so =>
-                                {
-                                    queryAggregator.GroupByExpressions.ForEach(gbe =>
-                                    {
-                                        var property = _propertyNameInferrerParser.Parser(gbe.PropertyName) + gbe.GetKeywordIfNecessary();
-                                        so.Terms($"group_by_{gbe.PropertyName}", t => t.Field(property));
-                                    });
-
-                                    return so;
-                                })
-                                .Aggregations(aa => aa
-                                    .TopHits("data_composite", th => th)   
-                                )
-                            );
-
-                        return a;
-                    });
-
-                }
-                
-                return descriptor;
-
-            });
+           var documents = AsyncHelper.RunSync(() => ExecuteAsync(queryModel, queryAggregator));
             
             if (queryModel.SelectClause?.Selector is MemberExpression)
             {
@@ -171,10 +76,116 @@ namespace LinqToElasticSearch
             return result;
         }
 
+        private async Task<ISearchResponse<IDictionary<string, object>>> ExecuteAsync(QueryModel queryModel,
+            QueryAggregator queryAggregator)
+        {
+            return
+                await _elasticClient.SearchAsync<IDictionary<string, object>>(descriptor =>
+                {
+                    descriptor.Index(_dataId);
+
+                    if (queryModel.SelectClause != null &&
+                        queryModel.SelectClause.Selector is MemberExpression memberExpression)
+                    {
+                        descriptor.Source(x => x.Includes(f =>
+                            f.Field(_propertyNameInferrerParser.Parser(memberExpression.Member.Name))));
+                    }
+
+                    if (queryAggregator.Skip != null)
+                    {
+                        descriptor.From(queryAggregator.Skip);
+                    }
+                    else
+                    {
+                        if (queryModel.ResultOperators.Any(x =>
+                                x is FirstResultOperator || x is SingleResultOperator))
+                        {
+                            descriptor.Size(1);
+                        }
+                        else
+                        {
+                            descriptor.Size(ElasticQueryLimit);
+                        }
+                    }
+
+                    if (queryAggregator.Take != null)
+                    {
+                        var take = queryAggregator.Take.Value;
+                        var skip = queryAggregator.Skip ?? 0;
+
+                        if (skip + take > ElasticQueryLimit)
+                        {
+                            var exceedCount = skip + take - ElasticQueryLimit;
+                            take -= exceedCount;
+                        }
+
+                        descriptor.Take(take);
+                        descriptor.Size(take);
+                    }
+
+                    if (queryAggregator.QueryContainers.Any())
+                    {
+                        descriptor.Query(q => q.Bool(x => x.Must(queryAggregator.QueryContainers.ToArray())));
+                    }
+                    else
+                    {
+                        descriptor.MatchAll();
+                    }
+
+
+                    if (queryAggregator.OrderByExpressions.Any())
+                    {
+                        descriptor.Sort(d =>
+                        {
+                            foreach (var orderByExpression in queryAggregator.OrderByExpressions)
+                            {
+                                var property = _propertyNameInferrerParser.Parser(orderByExpression.PropertyName) +
+                                               orderByExpression.GetKeywordIfNecessary();
+                                d.Field(property,
+                                    orderByExpression.OrderingDirection == OrderingDirection.Asc
+                                        ? SortOrder.Ascending
+                                        : SortOrder.Descending);
+                            }
+
+                            return d;
+                        });
+                    }
+
+                    if (queryAggregator.GroupByExpressions.Any())
+                    {
+                        descriptor.Aggregations(a =>
+                        {
+
+                            a.Composite("composite", c =>
+                                c.Sources(so =>
+                                    {
+                                        queryAggregator.GroupByExpressions.ForEach(gbe =>
+                                        {
+                                            var property = _propertyNameInferrerParser.Parser(gbe.PropertyName) +
+                                                           gbe.GetKeywordIfNecessary();
+                                            so.Terms($"group_by_{gbe.PropertyName}", t => t.Field(property));
+                                        });
+
+                                        return so;
+                                    })
+                                    .Aggregations(aa => aa
+                                        .TopHits("data_composite", th => th)
+                                    )
+                            );
+
+                            return a;
+                        });
+
+                    }
+
+                    return descriptor;
+
+                });
+        }
+
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
             var sequence = ExecuteCollection<T>(queryModel);
-
             return returnDefaultWhenEmpty ? sequence.SingleOrDefault() : sequence.Single();
         }
 
