@@ -1,4 +1,5 @@
 ﻿using System;
+using Nest;
 
 namespace LinqToElasticSearch.Extensions
 {
@@ -9,4 +10,14 @@ namespace LinqToElasticSearch.Extensions
             return str.IndexOf(value, comparison) >= 0;
         }
     }
+    
+    
+    public static class GeoExtensions
+    {
+        public static double Distance(this GeoLocation str, GeoLocation other, double distance)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 }

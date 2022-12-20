@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using AutoFixture;
 using LinqToElasticSearch.IntegrationTests.Utils;
 using Nest;
+using NetTopologySuite.Geometries;
+using Point = NetTopologySuite.Geometries.Point;
 
 namespace LinqToElasticSearch.IntegrationTests
 {
@@ -10,12 +14,13 @@ namespace LinqToElasticSearch.IntegrationTests
     {
         protected readonly ElasticClient ElasticClient;
         protected readonly ElasticQueryable<T> Sut;
-        private readonly string IndexName = $"linqtoelasticsearch-${typeof(T).Name.ToLower()}-${Guid.NewGuid()}";
+        private readonly string IndexName = $"mlinqtoelasticsearch-${typeof(T).Name.ToLower()}-${Guid.NewGuid()}";
         protected Fixture Fixture { get; }
 
         protected IntegrationTestsBase()
         {
             Fixture = new Fixture();
+            Fixture.Customize(new CustomeGeo());
 
             var server = GetSettingsValue("ElasticSearch.ReadModelNodeList", "http://localhost:9200");
             var username = GetSettingsValue("ElasticSearch.UserName", "");
@@ -28,7 +33,9 @@ namespace LinqToElasticSearch.IntegrationTests
                 ElasticClient.Indices.Delete(IndexName);
             }
 
-            ElasticClient.Indices.Create(IndexName, d => d.Settings(descriptor => descriptor).Map(m => m.AutoMap<T>()));
+            ElasticClient.Indices.Create(IndexName, d => d.Settings(descriptor => descriptor)
+                .Map<SampleData>(m => m.AutoMap()
+                    .Properties(p=>p.GeoPoint(g=>g.Name(n=>n.PointGeo)))));
             
             Sut = new ElasticQueryable<T>(ElasticClient, IndexName);
             
@@ -36,7 +43,11 @@ namespace LinqToElasticSearch.IntegrationTests
 
         protected void Bulk(IEnumerable<T> datas)
         {
-            ElasticClient.Bulk(descriptor => descriptor.Index(IndexName).IndexMany(datas));
+            var response = ElasticClient.Bulk(descriptor => descriptor.Index(IndexName).IndexMany(datas));
+            if (response.Errors)
+            {
+                
+            }
         }
         
         protected void Index(T data)
@@ -52,6 +63,14 @@ namespace LinqToElasticSearch.IntegrationTests
         private string GetSettingsValue(string key, string defaultValue)
         {
             return Environment.GetEnvironmentVariable(key) ?? defaultValue;
+        }
+    }
+    
+    public class CustomeGeo: ICustomization
+    {
+        public void Customize(IFixture fixture)
+        {
+            fixture.Customize<SampleData>(c => c.With(data => data.PointGeo, new GeoLocation(45,56)));
         }
     }
 }

@@ -1,6 +1,10 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using AutoFixture;
 using FluentAssertions;
+using LinqToElasticSearch.Extensions;
+using Nest;
+using NetTopologySuite.Geometries;
 using Xunit;
 
 namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
@@ -12,28 +16,38 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
         [Fact]
         public void GroupByBoolWithUniqueGrouping()
         {
-            //Given
-            var datas = Fixture.CreateMany<SampleData>(3).ToList();
+
+            try
+            {
+                //Given
+                var datas = Fixture.CreateMany<SampleData>(3).ToList();
             
-            datas[0].Can = true;
-            datas[1].Can = true;
-            datas[2].Can = false;
+                datas[0].Can = true;
+                datas[1].Can = true;
+                datas[2].Can = false;
             
-            Bulk(datas);
-            ElasticClient.Indices.Refresh();
+                Bulk(datas);
+                ElasticClient.Indices.Refresh();
             
-            //When
-            var results = Sut.GroupBy(x => x.Can).ToList();
+                //When
+                var r = Sut.Where(x => x.PointGeo.Distance(new GeoLocation(34, 67), 100)>100).ToList();
+                var results = Sut.GroupBy(x => x.Can).ToList();
             
-            //Then
-            results.Count.Should().Be(2);
-            results.Should().ContainSingle(x =>
-                x.Key == true
-                && x.Count() == 2);
+                //Then
+                results.Count.Should().Be(2);
+                results.Should().ContainSingle(x =>
+                    x.Key == true
+                    && x.Count() == 2);
             
-            results.Should().ContainSingle(x =>
-                x.Key == false
-                && x.Count() == 1);
+                results.Should().ContainSingle(x =>
+                    x.Key == false
+                    && x.Count() == 1);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         [Fact]

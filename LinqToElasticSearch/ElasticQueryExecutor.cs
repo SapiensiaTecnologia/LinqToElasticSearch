@@ -79,6 +79,7 @@ namespace LinqToElasticSearch
         private async Task<ISearchResponse<IDictionary<string, object>>> ExecuteAsync(QueryModel queryModel,
             QueryAggregator queryAggregator)
         {
+            
             return
                 await _elasticClient.SearchAsync<IDictionary<string, object>>(descriptor =>
                 {
@@ -90,6 +91,8 @@ namespace LinqToElasticSearch
                         descriptor.Source(x => x.Includes(f =>
                             f.Field(_propertyNameInferrerParser.Parser(memberExpression.Member.Name))));
                     }
+                    
+                    
 
                     if (queryAggregator.Skip != null)
                     {
