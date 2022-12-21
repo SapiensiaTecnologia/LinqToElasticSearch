@@ -1,6 +1,7 @@
 ﻿using System;
 using Elasticsearch.Net;
 using Nest;
+using NetTopologySuite.Geometries;
 
 namespace LinqToElasticSearch.IntegrationTests
 {
@@ -19,6 +20,13 @@ namespace LinqToElasticSearch.IntegrationTests
         public SampleType SampleTypePropertyString { get; set; }
         
         public bool Can { get; set; }
+
+        public GeoLocation  PointGeo { get; set; }
+    }
+
+    public class A
+    {
+        public string Test { get; set; }
     }
 
     public enum SampleType

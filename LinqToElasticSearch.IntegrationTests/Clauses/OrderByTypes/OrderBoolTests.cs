@@ -60,5 +60,35 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.OrderByTypes
             results[0].Age.Should().Be(7);
             results[0].Can.Should().Be(false);
         }
+        
+        
+        [Fact]
+        public void OrderDescNumberWithWhereFirstOrDefault()
+        {
+            //When
+            // var results = Sut.Where(x => x.Age > 5).OrderBy(x => x.Can).ToList();
+            var single = Sut.Where(x => x.Age > 5).OrderBy(x => x.Can).FirstOrDefault();
+            
+            //Then
+            single.Should().NotBeNull();
+            single.Age.Should().Be(7);
+            single.Can.Should().Be(false);
+        }
+        
+        [Fact]
+        public void OrderDescNumberWithWhereSingle()
+        {
+            //When
+            var single = Sut.Where(x => x.Age > 5).OrderBy(x => x.Can).FirstOrDefault();
+            single.Should().NotBeNull();
+            
+            single = Sut.OrderBy(x => x.Can).SingleOrDefault();
+            
+            //Then
+            single.Should().NotBeNull();
+            single.Age.Should().Be(7);
+            single.Can.Should().Be(false);
+        }
     }
+
 }
