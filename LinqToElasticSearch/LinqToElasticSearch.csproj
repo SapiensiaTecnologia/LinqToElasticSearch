@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elasticsearch.Net" Version="7.4.2" />
-    <PackageReference Include="NEST" Version="7.4.2" />
+    <PackageReference Include="Elasticsearch.Net" Version="7.17.4" />
+    <PackageReference Include="NEST" Version="7.17.4" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="Remotion.Linq" Version="2.1.2" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.0" />
