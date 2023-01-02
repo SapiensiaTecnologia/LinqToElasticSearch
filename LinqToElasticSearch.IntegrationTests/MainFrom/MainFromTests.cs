@@ -119,5 +119,32 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
             //Then
             listResults.Count.Should().Be(3);
         }
+        
+        [Fact]
+        public void MustSearchWithMainFromFormat5()
+        {
+            //Given
+            var data = Fixture.CreateMany<SampleData>(10).ToList();
+            data[2].Name = "9210964 " + Fixture.Create<string>();
+            data[3].LastName = Fixture.Create<string>() + " 9210964";
+            data[6].Age = 9210964;
+            
+            Bulk(data);
+
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var results = Sut.Where(x =>
+                x.Name.Contains("9210964")
+                || x.LastName.Contains("9210964")
+                || x.Age == 9210964
+            ).ToList();
+
+            //Then
+            results.Should().HaveCount(3);
+            results.Should().ContainSingle(x => x.Name == data[2].Name);
+            results.Should().ContainSingle(x => x.LastName == data[3].LastName);
+            results.Should().ContainSingle(x => x.Age == data[6].Age);
+        }
     }
 }

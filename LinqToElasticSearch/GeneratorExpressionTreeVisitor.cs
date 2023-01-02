@@ -208,12 +208,21 @@ namespace LinqToElasticSearch
                     });
                     break;
                 case ExpressionType.OrElse:
-                    var qc = (new BoolQuery()
+                    if (_queryContainers.Count > 1)
                     {
-                        Should = new[]{ _queryContainers[0], _queryContainers[1]}
-                    }); 
-                    _queryContainers.Clear();
-                    _queryContainers.Add(qc);
+                        var qc = new BoolQuery
+                        {
+                            Should = new[] { _queryContainers[0], _queryContainers[1] }
+                        };
+                        
+                        _queryContainers.Clear();
+                        _queryContainers.Add(qc);
+                    }
+                    else
+                    {
+                        ShouldList.Add(_queryContainers[0]);
+                        _queryContainers.Clear();
+                    }
                     break;
             }
         }
