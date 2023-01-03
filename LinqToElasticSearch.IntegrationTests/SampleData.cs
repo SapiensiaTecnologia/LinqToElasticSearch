@@ -1,7 +1,6 @@
 ﻿using System;
 using Elasticsearch.Net;
 using Nest;
-using NetTopologySuite.Geometries;
 
 namespace LinqToElasticSearch.IntegrationTests
 {

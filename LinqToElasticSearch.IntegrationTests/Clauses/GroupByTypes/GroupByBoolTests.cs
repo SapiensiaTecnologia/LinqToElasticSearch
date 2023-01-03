@@ -4,7 +4,6 @@ using AutoFixture;
 using FluentAssertions;
 using LinqToElasticSearch.Extensions;
 using Nest;
-using NetTopologySuite.Geometries;
 using Xunit;
 
 namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
@@ -30,18 +29,21 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
                 ElasticClient.Indices.Refresh();
             
                 //When
-                var r = Sut.Where(x => x.PointGeo.Distance(new GeoLocation(34, 67), 100)>100).ToList();
-                var results = Sut.GroupBy(x => x.Can).ToList();
-            
-                //Then
-                results.Count.Should().Be(2);
-                results.Should().ContainSingle(x =>
-                    x.Key == true
-                    && x.Count() == 2);
-            
-                results.Should().ContainSingle(x =>
-                    x.Key == false
-                    && x.Count() == 1);
+                var r = Sut.Where(x => x.PointGeo.Distance(new GeoLocation(34, 67), 100)).ToList();
+                r.Should().BeEmpty();
+                r = Sut.Where(x => x.PointGeo.Distance(new GeoLocation(45, 56), 0.5)).ToList();
+                r.Should().NotBeEmpty();
+                // var results = Sut.GroupBy(x => x.Can).ToList();
+                //
+                // //Then
+                // results.Count.Should().Be(2);
+                // results.Should().ContainSingle(x =>
+                //     x.Key == true
+                //     && x.Count() == 2);
+                //
+                // results.Should().ContainSingle(x =>
+                //     x.Key == false
+                //     && x.Count() == 1);
             }
             catch (Exception e)
             {

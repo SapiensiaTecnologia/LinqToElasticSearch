@@ -336,6 +336,13 @@ namespace LinqToElasticSearch
                 } 
         }
 
+        protected override Expression VisitMemberInit(MemberInitExpression node)
+        {
+            Visit(node.NewExpression);
+            Visit(node.Bindings, VisitMemberBinding);
+            return node;
+        }
+
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
             // In production code, handle this via method lookup tables.
@@ -388,6 +395,21 @@ namespace LinqToElasticSearch
                         Fields=  new[]{ PropertyName },
                         Query = "*" + Value
                     });
+                    AddQueryContainer(query);
+                    break;
+                case "Distance":
+                    Visit(expression.Object);
+                    Visit(expression.Arguments[0]);
+                    Visit(expression.Arguments[1]);
+                    Visit(expression.Arguments[2]);
+                    var locationArgument = (expression.Arguments[1] as ConstantExpression);
+                    var distanceArgument = (expression.Arguments[2] as ConstantExpression);
+                    query = new GeoDistanceQuery()
+                    {
+                        Field = PropertyName,
+                        Distance = new Distance((double)distanceArgument.Value),
+                        Location = (GeoLocation)locationArgument.Value
+                    };
                     AddQueryContainer(query);
                     break;
                 default:
@@ -463,6 +485,22 @@ namespace LinqToElasticSearch
             return expression;
         }
 
+        protected override MemberAssignment VisitMemberAssignment(MemberAssignment memberAssigment)
+        {
+            return memberAssigment;
+        }
+
+        protected override Expression VisitNew(NewExpression expression)
+        {
+            //Visit(expression);
+            return expression;
+            return base.VisitNew(expression);
+        }
+
+        protected override Expression VisitConditional(ConditionalExpression expression)
+        {
+            return expression;
+        }
 
         protected override Expression VisitConstant(ConstantExpression expression)
         {

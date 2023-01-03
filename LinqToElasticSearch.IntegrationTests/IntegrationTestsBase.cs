@@ -5,8 +5,6 @@ using System.Drawing;
 using AutoFixture;
 using LinqToElasticSearch.IntegrationTests.Utils;
 using Nest;
-using NetTopologySuite.Geometries;
-using Point = NetTopologySuite.Geometries.Point;
 
 namespace LinqToElasticSearch.IntegrationTests
 {

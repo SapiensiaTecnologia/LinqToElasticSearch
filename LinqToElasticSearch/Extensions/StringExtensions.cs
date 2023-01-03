@@ -14,7 +14,15 @@ namespace LinqToElasticSearch.Extensions
     
     public static class GeoExtensions
     {
-        public static double Distance(this GeoLocation str, GeoLocation other, double distance)
+        /// <summary>
+        /// Determine inf location is in distance range
+        /// </summary>
+        /// <param name="this"></param>
+        /// <param name="other">other location to compare</param>
+        /// <param name="distance">distance in kilometers</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static bool Distance(this GeoLocation @this, GeoLocation other, double distance)
         {
             throw new NotImplementedException();
         }
