@@ -12,6 +12,8 @@ namespace LinqToElasticSearch.IntegrationTests
 
         public DateTime Date { get; set; }
         
+        public DateTime? Date1 { get; set; }
+        
         public SampleType SampleTypeProperty { get; set; }
         
         [StringEnum]

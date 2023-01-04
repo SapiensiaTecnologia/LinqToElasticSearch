@@ -30,10 +30,10 @@ namespace LinqToElasticSearch
         {
             Visit(linqExpression);
             
-            var qc = (new BoolQuery()
+            var qc = new BoolQuery
             {
                 Should = ShouldList
-            }); 
+            }; 
             
             _queryContainers.Add(qc);
             return _queryContainers.ToList();
@@ -109,7 +109,6 @@ namespace LinqToElasticSearch
             return expression;
         }
 
-
         private void VisitStringProperty(ExpressionType expressionType)
         {
             if (Value is Guid valueGuid)
@@ -123,6 +122,7 @@ namespace LinqToElasticSearch
                 _queryContainers.Add(new MatchPhraseQuery()
                 {
                     Field = $"{PropertyName}",
+                    Name = PropertyName,
                     Query = (string) Value
                 });
             }
@@ -134,6 +134,7 @@ namespace LinqToElasticSearch
                     MustNot =new QueryContainer[]{ new MatchPhraseQuery()
                     {
                         Field = $"{PropertyName}",
+                        Name = PropertyName,
                         Query = (string) Value
                     }}
                 } );
@@ -157,6 +158,7 @@ namespace LinqToElasticSearch
                     _queryContainers.Add(new TermQuery()
                     {
                         Field = PropertyName,
+                        Name = PropertyName,
                         Value = doubleValue
                     });
                     // _queryContainers.Add(new MatchQuery()
@@ -172,6 +174,7 @@ namespace LinqToElasticSearch
                         MustNot =new QueryContainer[]{ new TermQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             Value = doubleValue
                         }}
                     } );
@@ -180,6 +183,7 @@ namespace LinqToElasticSearch
                     _queryContainers.Add(new NumericRangeQuery()
                     {
                         Field = PropertyName,
+                        Name = PropertyName,
                         GreaterThan = doubleValue
                     });
                     break;
@@ -188,6 +192,7 @@ namespace LinqToElasticSearch
                     _queryContainers.Add(new NumericRangeQuery()
                     {
                         Field = PropertyName,
+                        Name = PropertyName,
                         GreaterThanOrEqualTo = doubleValue
                     });
                     break;
@@ -196,6 +201,7 @@ namespace LinqToElasticSearch
                     _queryContainers.Add(new NumericRangeQuery()
                     {
                         Field = PropertyName,
+                        Name = PropertyName,
                         LessThan = doubleValue
                     });
                     break;
@@ -204,6 +210,7 @@ namespace LinqToElasticSearch
                     _queryContainers.Add(new NumericRangeQuery()
                     {
                         Field = PropertyName,
+                        Name = PropertyName,
                         LessThanOrEqualTo = doubleValue
                     });
                     break;
@@ -217,6 +224,7 @@ namespace LinqToElasticSearch
                     break;
             }
         }
+        
         private void VisitEnumProperty(ExpressionType expressionType)
         {
             switch (expressionType)
@@ -225,6 +233,7 @@ namespace LinqToElasticSearch
                     _queryContainers.Add(new TermQuery()
                     {
                         Field = PropertyName,
+                        Name = PropertyName,
                         Value = ConvertEnumValue(typeof(T),PropertyName,Value)
                     });
                     break;
@@ -235,6 +244,7 @@ namespace LinqToElasticSearch
                         MustNot = new QueryContainer[]{new TermQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             Value = ConvertEnumValue(typeof(T), PropertyName, Value)
                         }}
                     });
@@ -251,6 +261,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new TermQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             Value = boolValue
                         });
                         break;
@@ -259,6 +270,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new TermQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             Value = !boolValue
                         }); 
                         break;
@@ -282,6 +294,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new DateRangeQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             GreaterThan = dateTime
                         });
                         break;
@@ -289,6 +302,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new DateRangeQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             GreaterThanOrEqualTo = dateTime
                         });
                         break;
@@ -296,6 +310,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new DateRangeQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             LessThan = dateTime
                         });
                         break;
@@ -303,6 +318,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new DateRangeQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             LessThanOrEqualTo = dateTime
                         });
                         break;
@@ -310,6 +326,7 @@ namespace LinqToElasticSearch
                         _queryContainers.Add(new DateRangeQuery()
                         {
                             Field = PropertyName,
+                            Name = PropertyName,
                             GreaterThanOrEqualTo = dateTime,
                             LessThanOrEqualTo = dateTime 
                         });
@@ -320,17 +337,22 @@ namespace LinqToElasticSearch
                             MustNot =new QueryContainer[]{ new DateRangeQuery()
                             {
                                 Field = PropertyName,
+                                Name = PropertyName,
                                 GreaterThanOrEqualTo = dateTime,
                                 LessThanOrEqualTo = dateTime 
                             }}
                         });
                         break;
                     case ExpressionType.OrElse:
-                        var qc = (new BoolQuery()
+                        var dateContainers =  _queryContainers.Cast<IQueryContainer>().Where(x => x.Range != null && x.Range.Name == PropertyName).Cast<QueryContainer>().ToList();
+                        var qc = new BoolQuery
                         {
-                            Should = new[]{ _queryContainers[0], _queryContainers[1]}
-                        }); 
-                        _queryContainers.Clear();
+                            Name = PropertyName,
+                            Should = new[]{ dateContainers[0], dateContainers[1]}
+                        };
+                        
+                        _queryContainers.Remove(dateContainers[0]);
+                        _queryContainers.Remove(dateContainers[1]);
                         _queryContainers.Add(qc);
                         break;
                 } 
@@ -354,6 +376,7 @@ namespace LinqToElasticSearch
                         query = (new QueryStringQuery()
                         {
                             Fields=  new[]{ PropertyName },
+                            Name = PropertyName,
                             Query = "*" + Value + "*"
                         });
                     }
@@ -362,6 +385,7 @@ namespace LinqToElasticSearch
                         query = (new MultiMatchQuery()
                         {
                             Fields=  new[]{ PropertyName },
+                            Name = PropertyName,
                             Type = TextQueryType.PhrasePrefix,
                             Query = (string) Value,
                             MaxExpansions = 200
@@ -376,6 +400,7 @@ namespace LinqToElasticSearch
                     query = (new QueryStringQuery()
                     {
                         Fields=  new[]{ PropertyName },
+                        Name = PropertyName,
                         Query = Value + "*"
                     });
                     AddQueryContainer(query);
@@ -386,6 +411,7 @@ namespace LinqToElasticSearch
                     query = (new QueryStringQuery()
                     {
                         Fields=  new[]{ PropertyName },
+                        Name = PropertyName,
                         Query = "*" + Value
                     });
                     AddQueryContainer(query);
@@ -413,6 +439,7 @@ namespace LinqToElasticSearch
                                 AddQueryContainer(new TermsQuery()
                                 {
                                     Field = PropertyName,
+                                    Name = PropertyName,
                                     IsVerbatim = true,
                                     Terms = ((IEnumerable<Guid>) Value).Select(x => x.ToString()).ToList()
                                 });
@@ -421,6 +448,7 @@ namespace LinqToElasticSearch
                                 AddQueryContainer(new TermsQuery()
                                 {
                                     Field = PropertyName,
+                                    Name = PropertyName,
                                     IsVerbatim = true,
                                     Terms = ((IEnumerable<Guid?>) Value).Select(x => x.ToString())
                                 });
