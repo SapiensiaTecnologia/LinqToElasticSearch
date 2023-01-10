@@ -66,9 +66,9 @@ namespace LinqToElasticSearch
                     descriptor.Size(take);
                 }
                 
-                if (queryAggregator.QueryContainers.Any())
+                if (queryAggregator.Query != null)
                 {
-                    descriptor.Query(q => q.Bool(x => x.Must(queryAggregator.QueryContainers.ToArray())));
+                    descriptor.Query(q => queryAggregator.Query);
                 }
                 else
                 {
@@ -183,9 +183,9 @@ namespace LinqToElasticSearch
                     {
                         descriptor.Index(_dataId);
                     
-                        if (queryAggregator.QueryContainers.Any())
+                        if (queryAggregator.Query != null)
                         {
-                            descriptor.Query(q => q.Bool(x => x.Must(queryAggregator.QueryContainers.ToArray())));
+                            descriptor.Query(q => queryAggregator.Query);
                         }
                         return descriptor;
                     }).Count;

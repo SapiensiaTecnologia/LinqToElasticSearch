@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Elasticsearch.Net;
 using Nest;
 
@@ -16,6 +17,12 @@ namespace LinqToElasticSearch.IntegrationTests
         public DateTime? Date1 { get; set; }
         
         public SampleType SampleTypeProperty { get; set; }
+        
+        public Guid? FolderId { get; set; }
+        public Guid TypeId { get; set; }
+        
+        [Keyword]
+        public IList<string> Emails { get; set; }
         
         [StringEnum]
         [Keyword]

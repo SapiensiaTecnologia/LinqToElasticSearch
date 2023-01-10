@@ -7,7 +7,7 @@ namespace LinqToElasticSearch
 {
     public class QueryAggregator
     {
-        public List<QueryContainer> QueryContainers = new List<QueryContainer>();
+        public QueryContainer Query { get; set; }
         public int? Take { get; set; }
         public int? Skip { get; set; }
         public List<string> PropertiesToSelect = new List<string>();

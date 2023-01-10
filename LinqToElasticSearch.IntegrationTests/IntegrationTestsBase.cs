@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using AutoFixture;
+using FluentAssertions;
 using LinqToElasticSearch.IntegrationTests.Utils;
 using Nest;
+using Newtonsoft.Json;
 
 namespace LinqToElasticSearch.IntegrationTests
 {
@@ -52,6 +54,11 @@ namespace LinqToElasticSearch.IntegrationTests
         private string GetSettingsValue(string key, string defaultValue)
         {
             return Environment.GetEnvironmentVariable(key) ?? defaultValue;
+        }
+
+        public void CompareAsJson(object obj1, object obj2)
+        {
+            JsonConvert.SerializeObject(obj1).Should().Be(JsonConvert.SerializeObject(obj2));
         }
     }
 }

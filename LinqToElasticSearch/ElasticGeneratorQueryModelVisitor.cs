@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
@@ -48,13 +47,12 @@ namespace LinqToElasticSearch
         
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
-            var queryContainers = new GeneratorExpressionTreeVisitor<TU>(_propertyNameInferrerParser)
-                .GetNestExpression(whereClause.Predicate);
-            QueryAggregator.QueryContainers.AddRange(queryContainers);
+            var tree = new GeneratorExpressionTreeVisitor<TU>(_propertyNameInferrerParser);
+            tree.Visit(whereClause.Predicate);
+            QueryAggregator.Query = tree.QueryMap[whereClause.Predicate];
             base.VisitWhereClause(whereClause, queryModel, index);
         }
-
-
+        
         protected override void VisitResultOperators(ObservableCollection<ResultOperatorBase> resultOperators,
             QueryModel queryModel)
         {
