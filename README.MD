@@ -24,6 +24,10 @@ This Library has compatibility with Elasticsearch .Net & NEST Client and Elastic
 # Support Clauses with Integration Tests
 * Select
 * Where
+  * Where(x => x.Any(exp))
+  * Where(x => x.Contains(exp))
+  * Where(x => x.StartsWith(exp))
+  * Where(x => x.EndsWith(exp))
 * OrderBy
 * Skip
 * Take
