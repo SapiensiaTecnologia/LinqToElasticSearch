@@ -122,7 +122,7 @@ namespace LinqToElasticSearch
         {
             Visit(expression.Expression);
 
-            PropertyType = expression.Type;
+            PropertyType = Nullable.GetUnderlyingType(expression.Type) ?? expression.Type;
             PropertyName = _propertyNameInferrerParser.Parser(expression.Member.Name);
 
             // Implicit boolean is only a member visit
