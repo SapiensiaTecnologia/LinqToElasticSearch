@@ -196,6 +196,35 @@ namespace LinqToElasticSearch
 
                         QueryMap[expression] = ParseQuery(query);
                         break;
+                    case AllResultOperator allResultOperator:
+                        Visit(allResultOperator.Predicate);
+                        Visit(expression.QueryModel.MainFromClause.FromExpression);
+
+                        query = new TermsSetQuery
+                        {
+                            Field = PropertyName,
+                            Name = PropertyName,
+                            IsVerbatim = true,
+                            Terms = new[] { Value },
+                            MinimumShouldMatchScript = new InlineScript($"doc['{PropertyName}'].length")
+                        };
+
+                        if (allResultOperator.Predicate.NodeType == ExpressionType.Equal)
+                        {
+                            query = ParseQuery(query);
+                        }
+                        else if (allResultOperator.Predicate.NodeType == ExpressionType.NotEqual)
+                        {
+                            Not = true;
+                            query = ParseQuery(query);
+                        }
+                        else
+                        {
+                            return base.VisitSubQuery(expression);
+                        }
+
+                        QueryMap[expression] = query;
+                        break;
                     default:
                         return base.VisitSubQuery(expression); // throws
                 }
