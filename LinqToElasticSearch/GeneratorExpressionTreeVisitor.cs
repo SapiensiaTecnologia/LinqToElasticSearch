@@ -463,7 +463,14 @@ namespace LinqToElasticSearch
 
         private QueryContainer HandleNumericProperty(Expression expression)
         {
-            double.TryParse(Value.ToString(), out var doubleValue);
+            var value = Value;
+            
+            if (Value is TimeSpan timeSpan)
+            {
+                value = timeSpan.Ticks;
+            }
+            
+            double.TryParse(value.ToString(), out var doubleValue);
 
             switch (expression.NodeType)
             {
@@ -576,6 +583,7 @@ namespace LinqToElasticSearch
                     case float _:
                     case double _:
                     case decimal _:
+                    case TimeSpan _:
                         query = HandleNumericProperty(expression);
                         break;
                     case string _:
