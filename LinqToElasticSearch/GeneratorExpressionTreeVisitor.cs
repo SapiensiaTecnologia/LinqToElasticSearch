@@ -65,6 +65,9 @@ namespace LinqToElasticSearch
 
             HandleExpression(expression);
 
+            PropertyName = null;
+            PropertyType = null;
+
             if (expression.NodeType == ExpressionType.OrElse || expression.NodeType == ExpressionType.AndAlso)
             {
                 var left = QueryMap[expression.Left];
@@ -200,23 +203,28 @@ namespace LinqToElasticSearch
                         Visit(allResultOperator.Predicate);
                         Visit(expression.QueryModel.MainFromClause.FromExpression);
 
-                        query = new TermsSetQuery
-                        {
-                            Field = PropertyName,
-                            Name = PropertyName,
-                            IsVerbatim = true,
-                            Terms = new[] { Value },
-                            MinimumShouldMatchScript = new InlineScript($"doc['{PropertyName}'].length")
-                        };
-
                         if (allResultOperator.Predicate.NodeType == ExpressionType.Equal)
                         {
-                            query = ParseQuery(query);
+                            query = ParseQuery(new TermsSetQuery
+                            {
+                                Field = PropertyName,
+                                Name = PropertyName,
+                                IsVerbatim = true,
+                                Terms = new[] { Value },
+                                MinimumShouldMatchScript = new InlineScript($"doc['{PropertyName}'].length")
+                            });
                         }
                         else if (allResultOperator.Predicate.NodeType == ExpressionType.NotEqual)
                         {
                             Not = true;
-                            query = ParseQuery(query);
+                            query = ParseQuery(new TermsSetQuery
+                            {
+                                Field = PropertyName,
+                                Name = PropertyName,
+                                IsVerbatim = true,
+                                Terms = new[] { Value },
+                                MinimumShouldMatchScript = new InlineScript("0")
+                            });
                         }
                         else
                         {
