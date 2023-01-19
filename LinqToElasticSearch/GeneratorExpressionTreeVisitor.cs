@@ -180,24 +180,20 @@ namespace LinqToElasticSearch
                         QueryMap[expression] = ParseQuery(query);
                         break;
                     case AnyResultOperator anyResultOperator:
+                        Visit(expression.QueryModel.MainFromClause.FromExpression);
+
                         var whereClauses = expression.QueryModel.BodyClauses.OfType<WhereClause>().ToList();
 
+                        if (whereClauses.Count > 1)
+                        {
+                            return base.VisitSubQuery(expression); // Throws. Only one expression is supported.
+                        }
+                        
                         foreach (var whereClause in whereClauses)
                         {
                             Visit(whereClause.Predicate);
+                            QueryMap[expression] = QueryMap[whereClause.Predicate];
                         }
-
-                        Visit(expression.QueryModel.MainFromClause.FromExpression);
-
-                        query = new TermsQuery
-                        {
-                            Field = PropertyName,
-                            Name = PropertyName,
-                            IsVerbatim = true,
-                            Terms = new[] { Value }
-                        };
-
-                        QueryMap[expression] = ParseQuery(query);
                         break;
                     case AllResultOperator allResultOperator:
                         Visit(allResultOperator.Predicate);

@@ -452,6 +452,29 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
         }
         
         [Fact]
+        public void WhereWithAnyAndContainsExpression()
+        {
+            // Given
+            var samples = Fixture.CreateMany<SampleData>().ToList();
+            var searchEmail = samples[1].Emails[1][..^1];
+
+            // When
+            Bulk(samples);
+            ElasticClient.Indices.Refresh();
+            
+            var byElastic = Sut.Where(x => x.Emails.Any(y => y.Contains(searchEmail)))
+                .ToList();
+            
+            var byMemory = samples.Where(x => x.Emails.Any(y => y.Contains(searchEmail)))
+                .ToList();
+
+            // Then
+            byElastic.Should().HaveCount(1);
+            byElastic[0].Id.Should().Be(samples[1].Id);
+            CompareAsJson(byElastic, byMemory);
+        }
+        
+        [Fact]
         public void WhereWithAllClauseAndEqualExpression()
         {
             // Given

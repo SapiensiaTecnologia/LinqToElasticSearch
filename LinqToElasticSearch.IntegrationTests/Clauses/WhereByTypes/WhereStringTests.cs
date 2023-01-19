@@ -51,7 +51,7 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
         public void WhereStringContains()
         {
             //Given
-            var datas = Fixture.CreateMany<SampleData>().ToList();
+            var datas = Fixture.CreateMany<SampleData>(2).ToList();
 
             datas[0].Name = "abd";
             datas[1].Name = "abcdefgh";
