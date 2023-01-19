@@ -667,10 +667,17 @@ namespace LinqToElasticSearch
         private object ConvertEnumValue(Type entityType, string propertyName, object value)
         {
             var enumValue = Enum.Parse(PropertyType, value.ToString());
+            
             var prop = entityType.GetProperties().FirstOrDefault(x => x.Name.ToLower() == propertyName.ToLower());
 
-            if (prop != null && prop.GetCustomAttributes(true)
-                    .Any(attribute => attribute is StringEnumAttribute && prop.PropertyType.IsEnum))
+            if (prop == null)
+            {
+                return (int)enumValue;
+            }
+            
+            var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            
+            if (prop.GetCustomAttributes(true).Any(attribute => attribute is StringEnumAttribute && propType.IsEnum))
             {
                 return enumValue.ToString();
             }
