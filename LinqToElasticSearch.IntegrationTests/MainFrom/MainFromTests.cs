@@ -286,18 +286,11 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
             };
 
             var items = Fixture.CreateMany<SampleData>(4).ToList();
-            // tenho acesso
             items[0].FolderId = allowedFolders[0];
             items[0].TypeId = allowedTypes[0];
-            
-            // tenho acesso
             items[1].FolderId = allowedFolders[2];
-            
-            // tenho acesso
             items[2].FolderId = null;
             items[2].TypeId = allowedTypes[1];
-            
-            // nao tenho acesso
             items[3].FolderId = null;
 
             Bulk(items);
@@ -318,8 +311,10 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
                 )
                 .OrderBy(x => x.Id);
 
-            byElastic.ToList().Should().HaveCount(1);
-            byMemory.ToList().Should().HaveCount(1);
+            byElastic.Should().HaveCount(1);
+            byElastic.ToList()[0].Id.Should().Be(items[0].Id);
+            byMemory.Should().HaveCount(1);
+            byMemory.ToList()[0].Id.Should().Be(items[0].Id);
         }
         
         [Fact]
@@ -339,18 +334,11 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
             };
 
             var items = Fixture.CreateMany<SampleData>(4).ToList();
-            // tenho acesso
             items[0].FolderId = allowedFolders[0];
             items[0].TypeId = allowedTypes[0];
-            
-            // tenho acesso
             items[1].FolderId = allowedFolders[2];
-            
-            // tenho acesso
             items[2].FolderId = null;
             items[2].TypeId = allowedTypes[1];
-            
-            // nao tenho acesso
             items[3].FolderId = null;
 
             Bulk(items);
@@ -371,8 +359,8 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
                 )
                 .OrderBy(x => x.Id);
 
-            byElastic.ToList().Should().HaveCount(0);
-            byMemory.ToList().Should().HaveCount(0);
+            byElastic.Should().HaveCount(0);
+            byMemory.Should().HaveCount(0);
         }
         
         [Fact]
@@ -392,18 +380,11 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
             };
 
             var items = Fixture.CreateMany<SampleData>(4).ToList();
-            // tenho acesso
             items[0].FolderId = allowedFolders[0];
             items[0].TypeId = allowedTypes[0];
-            
-            // tenho acesso
             items[1].FolderId = allowedFolders[2];
-            
-            // tenho acesso
             items[2].FolderId = null;
             items[2].TypeId = allowedTypes[1];
-            
-            // nao tenho acesso
             items[3].FolderId = null;
 
             Bulk(items);
@@ -426,8 +407,10 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
                 )
                 .OrderBy(x => x.Id);
 
-            byElastic.ToList().Should().HaveCount(1);
-            byMemory.ToList().Should().HaveCount(1);
+            byElastic.Should().HaveCount(1);
+            byElastic.ToList()[0].Id.Should().Be(items[0].Id);
+            byMemory.Should().HaveCount(1);
+            byMemory.ToList()[0].Id.Should().Be(items[0].Id);
         }
         
         [Theory]
