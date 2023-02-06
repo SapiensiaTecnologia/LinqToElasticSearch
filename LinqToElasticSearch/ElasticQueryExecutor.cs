@@ -19,6 +19,7 @@ namespace LinqToElasticSearch
         private readonly string _dataId;
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
         private readonly ElasticGeneratorQueryModelVisitor<TK> _elasticGeneratorQueryModelVisitor;
+        private readonly JsonSerializerSettings _deserializerSettings;
         private const int ElasticQueryLimit = 10000;
             
         public ElasticQueryExecutor(IElasticClient elasticClient, string dataId)
@@ -27,6 +28,15 @@ namespace LinqToElasticSearch
             _dataId = dataId;
             _propertyNameInferrerParser = new PropertyNameInferrerParser(_elasticClient);
             _elasticGeneratorQueryModelVisitor = new ElasticGeneratorQueryModelVisitor<TK>(_propertyNameInferrerParser);
+            _deserializerSettings = new JsonSerializerSettings
+            {
+                // Nest maps TimeSpan as a long (TimeSpan ticks)
+                Converters = new List<JsonConverter>
+                {
+                    new TimeSpanConverter(),
+                    new TimeSpanNullableConverter()
+                }
+            };
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
@@ -127,13 +137,15 @@ namespace LinqToElasticSearch
             if (queryModel.SelectClause?.Selector is MemberExpression)
             {
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(
-                    JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values), Formatting.Indented));
+                    JsonConvert.SerializeObject(documents.Documents.SelectMany(x => x.Values)),
+                    _deserializerSettings
+                );
             }
 
             if (queryAggregator.GroupByExpressions.Any())
             {
                 var docDeserializer = new Func<object, TK>(input => 
-                    JsonConvert.DeserializeObject<TK>(JsonConvert.SerializeObject(input, Formatting.Indented)));
+                    JsonConvert.DeserializeObject<TK>(JsonConvert.SerializeObject(input), _deserializerSettings));
 
                 var originalGroupingType = queryModel.GetResultType().GenericTypeArguments.First();
                 var originalGroupingGenerics = originalGroupingType.GetGenericArguments();
@@ -159,7 +171,9 @@ namespace LinqToElasticSearch
             }
 
             var result = JsonConvert.DeserializeObject<IEnumerable<T>>(
-                JsonConvert.SerializeObject(documents.Documents, Formatting.Indented));
+                JsonConvert.SerializeObject(documents.Documents, Formatting.Indented), 
+                _deserializerSettings
+            );
 
             return result;
         }

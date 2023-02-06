@@ -65,6 +65,9 @@ namespace LinqToElasticSearch
 
             HandleExpression(expression);
 
+            PropertyName = null;
+            PropertyType = null;
+
             if (expression.NodeType == ExpressionType.OrElse || expression.NodeType == ExpressionType.AndAlso)
             {
                 var left = QueryMap[expression.Left];
@@ -122,7 +125,7 @@ namespace LinqToElasticSearch
         {
             Visit(expression.Expression);
 
-            PropertyType = expression.Type;
+            PropertyType = Nullable.GetUnderlyingType(expression.Type) ?? expression.Type;
             PropertyName = _propertyNameInferrerParser.Parser(expression.Member.Name);
 
             // Implicit boolean is only a member visit
@@ -177,24 +180,54 @@ namespace LinqToElasticSearch
                         QueryMap[expression] = ParseQuery(query);
                         break;
                     case AnyResultOperator anyResultOperator:
+                        Visit(expression.QueryModel.MainFromClause.FromExpression);
+
                         var whereClauses = expression.QueryModel.BodyClauses.OfType<WhereClause>().ToList();
 
+                        if (whereClauses.Count > 1)
+                        {
+                            return base.VisitSubQuery(expression); // Throws. Only one expression is supported.
+                        }
+                        
                         foreach (var whereClause in whereClauses)
                         {
                             Visit(whereClause.Predicate);
+                            QueryMap[expression] = QueryMap[whereClause.Predicate];
                         }
-
+                        break;
+                    case AllResultOperator allResultOperator:
+                        Visit(allResultOperator.Predicate);
                         Visit(expression.QueryModel.MainFromClause.FromExpression);
 
-                        query = new TermsQuery
+                        if (allResultOperator.Predicate.NodeType == ExpressionType.Equal)
                         {
-                            Field = PropertyName,
-                            Name = PropertyName,
-                            IsVerbatim = true,
-                            Terms = new[] { Value }
-                        };
+                            query = ParseQuery(new TermsSetQuery
+                            {
+                                Field = PropertyName,
+                                Name = PropertyName,
+                                IsVerbatim = true,
+                                Terms = new[] { Value },
+                                MinimumShouldMatchScript = new InlineScript($"doc['{PropertyName}'].length")
+                            });
+                        }
+                        else if (allResultOperator.Predicate.NodeType == ExpressionType.NotEqual)
+                        {
+                            Not = true;
+                            query = ParseQuery(new TermsSetQuery
+                            {
+                                Field = PropertyName,
+                                Name = PropertyName,
+                                IsVerbatim = true,
+                                Terms = new[] { Value },
+                                MinimumShouldMatchScript = new InlineScript("0")
+                            });
+                        }
+                        else
+                        {
+                            return base.VisitSubQuery(expression);
+                        }
 
-                        QueryMap[expression] = ParseQuery(query);
+                        QueryMap[expression] = query;
                         break;
                     default:
                         return base.VisitSubQuery(expression); // throws
@@ -434,7 +467,14 @@ namespace LinqToElasticSearch
 
         private QueryContainer HandleNumericProperty(Expression expression)
         {
-            double.TryParse(Value.ToString(), out var doubleValue);
+            var value = Value;
+            
+            if (Value is TimeSpan timeSpan)
+            {
+                value = timeSpan.Ticks;
+            }
+            
+            double.TryParse(value.ToString(), out var doubleValue);
 
             switch (expression.NodeType)
             {
@@ -547,6 +587,7 @@ namespace LinqToElasticSearch
                     case float _:
                     case double _:
                     case decimal _:
+                    case TimeSpan _:
                         query = HandleNumericProperty(expression);
                         break;
                     case string _:
@@ -622,10 +663,17 @@ namespace LinqToElasticSearch
         private object ConvertEnumValue(Type entityType, string propertyName, object value)
         {
             var enumValue = Enum.Parse(PropertyType, value.ToString());
+            
             var prop = entityType.GetProperties().FirstOrDefault(x => x.Name.ToLower() == propertyName.ToLower());
 
-            if (prop != null && prop.GetCustomAttributes(true)
-                    .Any(attribute => attribute is StringEnumAttribute && prop.PropertyType.IsEnum))
+            if (prop == null)
+            {
+                return (int)enumValue;
+            }
+            
+            var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            
+            if (prop.GetCustomAttributes(true).Any(attribute => attribute is StringEnumAttribute && propType.IsEnum))
             {
                 return enumValue.ToString();
             }
