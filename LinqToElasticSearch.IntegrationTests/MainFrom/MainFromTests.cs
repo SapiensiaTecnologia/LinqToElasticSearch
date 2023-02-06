@@ -269,6 +269,167 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
             CompareAsJson(byElastic, byMemory);
         }
 
+        [Fact]
+        public void WhereWithThreeConditionsUsingContainAndExtrinsicComparisonWithFoundValue()
+        {
+            var allowedFolders = new List<Guid>
+            {
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>()
+            };
+
+            var allowedTypes = new List<Guid>
+            {
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>()
+            };
+
+            var items = Fixture.CreateMany<SampleData>(4).ToList();
+            // tenho acesso
+            items[0].FolderId = allowedFolders[0];
+            items[0].TypeId = allowedTypes[0];
+            
+            // tenho acesso
+            items[1].FolderId = allowedFolders[2];
+            
+            // tenho acesso
+            items[2].FolderId = null;
+            items[2].TypeId = allowedTypes[1];
+            
+            // nao tenho acesso
+            items[3].FolderId = null;
+
+            Bulk(items);
+            ElasticClient.Indices.Refresh();
+
+            var byElastic = Sut.Where(x => x.Name == items[0].Name);
+            var byMemory = Sut.Where(x => x.Name == items[0].Name);
+
+            byElastic = byElastic.Where(item =>
+                    (item.FolderId == null && (false || allowedTypes.Contains(item.TypeId)))
+                    || (item.FolderId != null && allowedFolders.Contains(item.FolderId.Value))
+                )
+                .OrderBy(x => x.Id);
+
+            byMemory = byMemory.Where(item =>
+                    (item.FolderId == null && (false || allowedTypes.Contains(item.TypeId)))
+                    || (item.FolderId != null && allowedFolders.Contains(item.FolderId.Value))
+                )
+                .OrderBy(x => x.Id);
+
+            byElastic.ToList().Should().HaveCount(1);
+            byMemory.ToList().Should().HaveCount(1);
+        }
+        
+        [Fact]
+        public void WhereWithThreeConditionsUsingContainAndExtrinsicComparisonWithoutFoundValue()
+        {
+            var allowedFolders = new List<Guid>
+            {
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>()
+            };
+
+            var allowedTypes = new List<Guid>
+            {
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>()
+            };
+
+            var items = Fixture.CreateMany<SampleData>(4).ToList();
+            // tenho acesso
+            items[0].FolderId = allowedFolders[0];
+            items[0].TypeId = allowedTypes[0];
+            
+            // tenho acesso
+            items[1].FolderId = allowedFolders[2];
+            
+            // tenho acesso
+            items[2].FolderId = null;
+            items[2].TypeId = allowedTypes[1];
+            
+            // nao tenho acesso
+            items[3].FolderId = null;
+
+            Bulk(items);
+            ElasticClient.Indices.Refresh();
+
+            var byElastic = Sut.Where(x => x.Name == items[3].Name);
+            var byMemory = Sut.Where(x => x.Name == items[3].Name);
+
+            byElastic = byElastic.Where(item =>
+                    (item.FolderId == null && (false || allowedTypes.Contains(item.TypeId)))
+                    || (item.FolderId != null && allowedFolders.Contains(item.FolderId.Value))
+                )
+                .OrderBy(x => x.Id);
+
+            byMemory = byMemory.Where(item =>
+                    (item.FolderId == null && (false || allowedTypes.Contains(item.TypeId)))
+                    || (item.FolderId != null && allowedFolders.Contains(item.FolderId.Value))
+                )
+                .OrderBy(x => x.Id);
+
+            byElastic.ToList().Should().HaveCount(0);
+            byMemory.ToList().Should().HaveCount(0);
+        }
+        
+        [Fact]
+        public void WhereWithFourConditionsUsingContainAndExtrinsicComparison()
+        {
+            var allowedFolders = new List<Guid>
+            {
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>()
+            };
+
+            var allowedTypes = new List<Guid>
+            {
+                Fixture.Create<Guid>(),
+                Fixture.Create<Guid>()
+            };
+
+            var items = Fixture.CreateMany<SampleData>(4).ToList();
+            // tenho acesso
+            items[0].FolderId = allowedFolders[0];
+            items[0].TypeId = allowedTypes[0];
+            
+            // tenho acesso
+            items[1].FolderId = allowedFolders[2];
+            
+            // tenho acesso
+            items[2].FolderId = null;
+            items[2].TypeId = allowedTypes[1];
+            
+            // nao tenho acesso
+            items[3].FolderId = null;
+
+            Bulk(items);
+            ElasticClient.Indices.Refresh();
+
+            var byElastic = Sut.Where(x => x.Name == items[0].Name);
+            var byMemory = Sut.Where(x => x.Name == items[0].Name);
+
+            byElastic = byElastic.Where(item => item.Age == items[0].Age);
+                
+            byElastic = byElastic.Where(item =>
+                    (item.FolderId == null && (false || allowedTypes.Contains(item.TypeId)))
+                    || (item.FolderId != null && allowedFolders.Contains(item.FolderId.Value))
+                )
+                .OrderBy(x => x.Id);
+
+            byMemory = byMemory.Where(item =>
+                    (item.FolderId == null && (false || allowedTypes.Contains(item.TypeId)))
+                    || (item.FolderId != null && allowedFolders.Contains(item.FolderId.Value))
+                )
+                .OrderBy(x => x.Id);
+
+            byElastic.ToList().Should().HaveCount(1);
+            byMemory.ToList().Should().HaveCount(1);
+        }
+        
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

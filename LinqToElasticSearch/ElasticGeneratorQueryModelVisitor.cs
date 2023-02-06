@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
+using Nest;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
@@ -49,7 +50,22 @@ namespace LinqToElasticSearch
         {
             var tree = new GeneratorExpressionTreeVisitor<TU>(_propertyNameInferrerParser);
             tree.Visit(whereClause.Predicate);
-            QueryAggregator.Query = tree.QueryMap[whereClause.Predicate];
+            if (QueryAggregator.Query == null)
+            {
+                QueryAggregator.Query = tree.QueryMap[whereClause.Predicate];
+            }
+            else
+            {
+                var left = QueryAggregator.Query;
+                var right = tree.QueryMap[whereClause.Predicate];
+
+                var query = new BoolQuery
+                {
+                    Must = new[] { left, right }
+                };
+
+                QueryAggregator.Query = query;
+            }
             base.VisitWhereClause(whereClause, queryModel, index);
         }
         
