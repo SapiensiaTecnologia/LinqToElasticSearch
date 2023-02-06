@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Elasticsearch.Net" Version="7.17.4" />
     <PackageReference Include="NEST" Version="7.13.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Remotion.Linq" Version="2.1.2" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.0" />
   </ItemGroup>
