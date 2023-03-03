@@ -20,8 +20,8 @@ namespace LinqToElasticSearch
         private Type PropertyType { get; set; }
         private bool Not { get; set; }
 
-        public IDictionary<Expression, QueryContainer> QueryMap { get; } =
-            new Dictionary<Expression, QueryContainer>();
+        public IDictionary<Expression, Node> QueryMap { get; } =
+            new Dictionary<Expression, Node>();
 
         public GeneratorExpressionTreeVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
@@ -68,18 +68,28 @@ namespace LinqToElasticSearch
             PropertyName = null;
             PropertyType = null;
 
-            if (expression.NodeType == ExpressionType.OrElse || expression.NodeType == ExpressionType.AndAlso)
+            Node node = null;
+
+            if (expression.NodeType == ExpressionType.OrElse)
             {
-                var left = QueryMap[expression.Left];
-                var right = QueryMap[expression.Right];
-
-                var query = new BoolQuery
+                node = new OrNode
                 {
-                    Should = expression.NodeType == ExpressionType.OrElse ? new[] { left, right } : null,
-                    Must = expression.NodeType == ExpressionType.AndAlso ? new[] { left, right } : null
+                    Left = QueryMap[expression.Left],
+                    Right = QueryMap[expression.Right]
                 };
+            }
+            else if (expression.NodeType == ExpressionType.AndAlso)
+            {
+                node = new AndNode
+                {
+                    Left = QueryMap[expression.Left],
+                    Right = QueryMap[expression.Right]
+                };
+            }
 
-                QueryMap[expression] = ParseQuery(query);
+            if (node != null)
+            {
+                QueryMap[expression] = ParseQuery(node);
             }
 
             return expression;
@@ -147,7 +157,7 @@ namespace LinqToElasticSearch
         {
             foreach (var resultOperator in expression.QueryModel.ResultOperators)
             {
-                QueryContainer query = null;
+                Node query = null;
 
                 switch (resultOperator)
                 {
@@ -157,24 +167,12 @@ namespace LinqToElasticSearch
 
                         if (containsResultOperator.Item.Type == typeof(Guid))
                         {
-                            query = new TermsQuery
-                            {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                IsVerbatim = true,
-                                Terms = ((IEnumerable<Guid>)Value).Select(x => x.ToString())
-                            };
+                            query = new TermsNode(PropertyName, ((IEnumerable<Guid>)Value).Select(x => x.ToString()));
                         }
 
                         if (containsResultOperator.Item.Type == typeof(Guid?))
                         {
-                            query = new TermsQuery
-                            {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                IsVerbatim = true,
-                                Terms = ((IEnumerable<Guid?>)Value).Select(x => x.ToString())
-                            };
+                            query = new TermsNode(PropertyName, ((IEnumerable<Guid?>)Value).Select(x => x.ToString()));
                         }
 
                         QueryMap[expression] = ParseQuery(query);
@@ -188,12 +186,13 @@ namespace LinqToElasticSearch
                         {
                             return base.VisitSubQuery(expression); // Throws. Only one expression is supported.
                         }
-                        
+
                         foreach (var whereClause in whereClauses)
                         {
                             Visit(whereClause.Predicate);
                             QueryMap[expression] = QueryMap[whereClause.Predicate];
                         }
+
                         break;
                     case AllResultOperator allResultOperator:
                         Visit(allResultOperator.Predicate);
@@ -201,25 +200,17 @@ namespace LinqToElasticSearch
 
                         if (allResultOperator.Predicate.NodeType == ExpressionType.Equal)
                         {
-                            query = ParseQuery(new TermsSetQuery
+                            query = ParseQuery(new TermsSetNode(PropertyName, new string[] { (string)Value })
                             {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                IsVerbatim = true,
-                                Terms = new[] { Value },
-                                MinimumShouldMatchScript = new InlineScript($"doc['{PropertyName}'].length")
+                                Equal = true
                             });
                         }
                         else if (allResultOperator.Predicate.NodeType == ExpressionType.NotEqual)
                         {
                             Not = true;
-                            query = ParseQuery(new TermsSetQuery
+                            query = ParseQuery(new TermsSetNode(PropertyName, new string[] { (string)Value })
                             {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                IsVerbatim = true,
-                                Terms = new[] { Value },
-                                MinimumShouldMatchScript = new InlineScript("0")
+                                Equal = false
                             });
                         }
                         else
@@ -255,7 +246,7 @@ namespace LinqToElasticSearch
             return new NotSupportedException(message);
         }
 
-        private QueryContainer ParseQuery(QueryContainer query)
+        private Node ParseQuery(Node query)
         {
             if (query == null)
             {
@@ -265,78 +256,40 @@ namespace LinqToElasticSearch
             if (Not)
             {
                 Not = false;
-
-                return new BoolQuery
-                {
-                    MustNot = new[] { query }
-                };
+                return new NotNode(query);
             }
 
             return query;
         }
 
-        private QueryContainer HandleNullProperty(Expression expression)
+        private Node HandleNullProperty(Expression expression)
         {
             switch (expression.NodeType)
             {
                 case ExpressionType.Constant:
                 case ExpressionType.Equal:
-                    return new BoolQuery
-                    {
-                        MustNot = new QueryContainer[]
-                        {
-                            new ExistsQuery
-                            {
-                                Field = PropertyName
-                            }
-                        }
-                    };
+                    return new NotExistsNode(PropertyName);
                 case ExpressionType.NotEqual:
-                    return new BoolQuery
-                    {
-                        Must = new QueryContainer[]
-                        {
-                            new ExistsQuery
-                            {
-                                Field = PropertyName
-                            }
-                        }
-                    };
-                default:
-                    return (BoolQuery)null;
-            }
-        }
-
-        private QueryContainer HandleEnumProperty(Expression expression)
-        {
-            switch (expression.NodeType)
-            {
-                case ExpressionType.Equal:
-                    return new TermQuery
-                    {
-                        Field = PropertyName,
-                        Name = PropertyName,
-                        Value = ConvertEnumValue(typeof(T), PropertyName, Value)
-                    };
-                case ExpressionType.NotEqual:
-                    return new BoolQuery
-                    {
-                        MustNot = new QueryContainer[]
-                        {
-                            new TermQuery
-                            {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                Value = ConvertEnumValue(typeof(T), PropertyName, Value)
-                            }
-                        }
-                    };
+                    return new ExistsNode(PropertyName);
                 default:
                     return null;
             }
         }
 
-        private QueryContainer HandleDateProperty(Expression expression)
+        private Node HandleEnumProperty(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Equal:
+                    return new TermNode(PropertyName, ConvertEnumValue(typeof(T), PropertyName, Value));
+                case ExpressionType.NotEqual:
+                    return new NotNode(new TermNode(PropertyName, ConvertEnumValue(typeof(T), PropertyName, Value)));
+                default:
+                    return null;
+            }
+        }
+
+        private Node HandleDateProperty(Expression expression)
         {
             if (!(Value is DateTime dateTime))
             {
@@ -346,61 +299,45 @@ namespace LinqToElasticSearch
             switch (expression.NodeType)
             {
                 case ExpressionType.GreaterThan:
-                    return new DateRangeQuery
+                    return new DateRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         GreaterThan = dateTime
                     };
                 case ExpressionType.GreaterThanOrEqual:
-                    return new DateRangeQuery
+                    return new DateRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         GreaterThanOrEqualTo = dateTime
                     };
                 case ExpressionType.LessThan:
-                    return new DateRangeQuery
+                    return new DateRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         LessThan = dateTime
                     };
                 case ExpressionType.LessThanOrEqual:
-                    return new DateRangeQuery
+                    return new DateRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         LessThanOrEqualTo = dateTime
                     };
                 case ExpressionType.Equal:
-                    return new DateRangeQuery
+                    return new DateRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
+                        LessThan = dateTime,
                         GreaterThanOrEqualTo = dateTime,
                         LessThanOrEqualTo = dateTime
                     };
                 case ExpressionType.NotEqual:
-                    return new BoolQuery
+                    return new NotNode(new DateRangeNode(PropertyName)
                     {
-                        MustNot = new QueryContainer[]
-                        {
-                            new DateRangeQuery
-                            {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                GreaterThanOrEqualTo = dateTime,
-                                LessThanOrEqualTo = dateTime
-                            }
-                        }
-                    };
+                        LessThan = dateTime,
+                        GreaterThanOrEqualTo = dateTime,
+                        LessThanOrEqualTo = dateTime
+                    });
                 default:
                     return null;
             }
         }
 
-        private QueryContainer HandleBoolProperty(Expression expression)
+        private Node HandleBoolProperty(Expression expression)
         {
             if (!(Value is bool boolValue))
             {
@@ -412,26 +349,16 @@ namespace LinqToElasticSearch
                 case ExpressionType.Constant:
                 case ExpressionType.MemberAccess:
                 case ExpressionType.Equal:
-                    return new TermQuery
-                    {
-                        Field = PropertyName,
-                        Name = PropertyName,
-                        Value = boolValue
-                    };
+                    return new TermNode(PropertyName, boolValue);
                 case ExpressionType.NotEqual:
                 case ExpressionType.Not:
-                    return new TermQuery
-                    {
-                        Field = PropertyName,
-                        Name = PropertyName,
-                        Value = !boolValue
-                    };
+                    return new TermNode(PropertyName, !boolValue);
                 default:
-                    return (TermQuery)null;
+                    return null;
             }
         }
 
-        private QueryContainer HandleStringProperty(Expression expression)
+        private Node HandleStringProperty(Expression expression)
         {
             if (Value is Guid guid)
             {
@@ -441,89 +368,49 @@ namespace LinqToElasticSearch
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:
-                    return new MatchPhraseQuery
-                    {
-                        Field = PropertyName,
-                        Name = PropertyName,
-                        Query = (string)Value
-                    };
+                    return new MatchPhraseNode(PropertyName, Value);
                 case ExpressionType.NotEqual:
-                    return new BoolQuery
-                    {
-                        MustNot = new QueryContainer[]
-                        {
-                            new MatchPhraseQuery
-                            {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                Query = (string)Value
-                            }
-                        }
-                    };
+                    return new NotNode(new MatchPhraseNode(PropertyName, Value));
                 default:
                     return null;
             }
         }
 
-        private QueryContainer HandleNumericProperty(Expression expression)
+        private Node HandleNumericProperty(Expression expression)
         {
             var value = Value;
-            
+
             if (Value is TimeSpan timeSpan)
             {
                 value = timeSpan.Ticks;
             }
-            
+
             double.TryParse(value.ToString(), out var doubleValue);
 
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:
-                    return new TermQuery
-                    {
-                        Field = PropertyName,
-                        Name = PropertyName,
-                        Value = doubleValue
-                    };
+                    return new TermNode(PropertyName, doubleValue);
                 case ExpressionType.NotEqual:
-                    return new BoolQuery
-                    {
-                        MustNot = new QueryContainer[]
-                        {
-                            new TermQuery
-                            {
-                                Field = PropertyName,
-                                Name = PropertyName,
-                                Value = doubleValue
-                            }
-                        }
-                    };
+                    return new NotNode(new TermNode(PropertyName, doubleValue));
                 case ExpressionType.GreaterThan:
-                    return new NumericRangeQuery
+                    return new NumericRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         GreaterThan = doubleValue
                     };
                 case ExpressionType.GreaterThanOrEqual:
-                    return new NumericRangeQuery
+                    return new NumericRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         GreaterThanOrEqualTo = doubleValue
                     };
                 case ExpressionType.LessThan:
-                    return new NumericRangeQuery
+                    return new NumericRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         LessThan = doubleValue
                     };
                 case ExpressionType.LessThanOrEqual:
-                    return new NumericRangeQuery
+                    return new NumericRangeNode(PropertyName)
                     {
-                        Field = PropertyName,
-                        Name = PropertyName,
                         LessThanOrEqualTo = doubleValue
                     };
                 default:
@@ -562,7 +449,7 @@ namespace LinqToElasticSearch
 
         private void HandleExpression(Expression expression)
         {
-            QueryContainer query;
+            Node query;
 
             if (Value == null)
             {
@@ -610,27 +497,15 @@ namespace LinqToElasticSearch
         {
             var tokens = ((string)Value).Split(' ');
 
-            QueryContainer query;
+            Node query;
 
             if (tokens.Length == 1)
             {
-                query = new QueryStringQuery
-                {
-                    Fields = new[] { PropertyName },
-                    Name = PropertyName,
-                    Query = "*" + Value + "*"
-                };
+                query = new QueryStringNode(PropertyName, "*" + Value + "*");
             }
             else
             {
-                query = new MultiMatchQuery
-                {
-                    Fields = new[] { PropertyName },
-                    Name = PropertyName,
-                    Type = TextQueryType.PhrasePrefix,
-                    Query = (string)Value,
-                    MaxExpansions = 200
-                };
+                query = new MultiMatchNode(PropertyName, Value);
             }
 
             QueryMap[expression] = ParseQuery(query);
@@ -638,41 +513,29 @@ namespace LinqToElasticSearch
 
         private void HandleStartsWith(Expression expression)
         {
-            var query = new QueryStringQuery
-            {
-                Fields = new[] { PropertyName },
-                Name = PropertyName,
-                Query = Value + "*"
-            };
-
+            var query = new QueryStringNode(PropertyName, Value + "*");
             QueryMap[expression] = ParseQuery(query);
         }
 
         private void HandleEndsWith(Expression expression)
         {
-            var query = new QueryStringQuery
-            {
-                Fields = new[] { PropertyName },
-                Name = PropertyName,
-                Query = "*" + Value
-            };
-
+            var query = new QueryStringNode(PropertyName, "*" + Value);
             QueryMap[expression] = ParseQuery(query);
         }
 
         private object ConvertEnumValue(Type entityType, string propertyName, object value)
         {
             var enumValue = Enum.Parse(PropertyType, value.ToString());
-            
+
             var prop = entityType.GetProperties().FirstOrDefault(x => x.Name.ToLower() == propertyName.ToLower());
 
             if (prop == null)
             {
                 return (int)enumValue;
             }
-            
+
             var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-            
+
             if (prop.GetCustomAttributes(true).Any(attribute => attribute is StringEnumAttribute && propType.IsEnum))
             {
                 return enumValue.ToString();

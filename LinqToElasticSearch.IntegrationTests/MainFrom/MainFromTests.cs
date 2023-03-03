@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using AutoFixture;
+using Elasticsearch.Net;
 using FluentAssertions;
+using Nest;
 using Xunit;
 
 namespace LinqToElasticSearch.IntegrationTests.MainFrom
@@ -689,6 +691,57 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
 
             // Then
             CompareAsJson(byElastic, byMemory);
+        }
+
+        [Fact]
+        public void ShouldOptimizeBoolQueries()
+        {
+            // Given
+            var samples = Fixture.CreateMany<SampleData>(35).ToList();
+            var ids = samples.Select(x => x.Id).ToList();
+            
+            Bulk(samples);
+            ElasticClient.Indices.Refresh();
+
+            // When
+            
+            // By default, indices.query.bool.max_nested_depth is 20.
+            // We need optimize bool queries.
+            var results = Sut.Where(x =>
+                x.Id == ids[0]
+                || x.Id == ids[1]
+                || x.Id == ids[2]
+                || x.Id == ids[3]
+                || x.Id == ids[4]
+                || x.Id == ids[5]
+                || x.Id == ids[6]
+                || x.Id == ids[7]
+                || x.Id == ids[8]
+                || x.Id == ids[9]
+                || x.Id == ids[10]
+                || x.Id == ids[11]
+                || x.Id == ids[12]
+                || x.Id == ids[13]
+                || x.Id == ids[14]
+                || x.Id == ids[15]
+                || x.Id == ids[16]
+                || x.Id == ids[17]
+                || x.Id == ids[18]
+                || x.Id == ids[19]
+                || x.Id == ids[20]
+                || x.Id == ids[21]
+                || x.Id == ids[22]
+                || x.Id == ids[23]
+                || x.Id == ids[24]
+                || x.Id == ids[25]
+                || x.Id == ids[26]
+                || x.Id == ids[27]
+                || x.Id == ids[28]
+                || x.Id == ids[29]
+            );
+
+            // Then
+            results.Should().HaveCount(30);
         }
     }
 }
