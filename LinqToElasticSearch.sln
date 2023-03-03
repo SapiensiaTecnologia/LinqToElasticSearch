@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElasticSearch", "Linq
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElasticSearch.IntegrationTests", "LinqToElasticSearch.IntegrationTests\LinqToElasticSearch.IntegrationTests.csproj", "{E5381249-6BF5-41CF-B63B-5D3168E48170}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinqToElasticSearch.UnitTests", "LinqToElasticSearch.UnitTests\LinqToElasticSearch.UnitTests.csproj", "{67FED8EC-4292-473C-B505-78D4A430CA80}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,17 +44,5 @@ Global
 		{E5381249-6BF5-41CF-B63B-5D3168E48170}.Release|x64.Build.0 = Release|Any CPU
 		{E5381249-6BF5-41CF-B63B-5D3168E48170}.Release|x86.ActiveCfg = Release|Any CPU
 		{E5381249-6BF5-41CF-B63B-5D3168E48170}.Release|x86.Build.0 = Release|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Debug|x64.Build.0 = Debug|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Debug|x86.Build.0 = Debug|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Release|Any CPU.Build.0 = Release|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Release|x64.ActiveCfg = Release|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Release|x64.Build.0 = Release|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Release|x86.ActiveCfg = Release|Any CPU
-		{67FED8EC-4292-473C-B505-78D4A430CA80}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

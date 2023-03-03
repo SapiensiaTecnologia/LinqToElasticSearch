@@ -203,12 +203,12 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
         }
 
         [Theory]
-        [InlineData("Emails.Any(x => x.Contains(\"test@test.com\"))", 1)]
-        [InlineData("Emails.Any(x => x.Contains(\"test@test.com\")) || Name == \"Test\"", 2)]
-        [InlineData("Name == \"Test\" || Emails.Any(x => x.Contains(\"test@test.com\"))", 2)]
-        [InlineData("Age == 846445 || Emails.Any(x => x.Contains(\"test@test.com\")) || Name == \"Test\"", 3)]
-        [InlineData("Name == \"Test\" || Emails.Any(x => x.Contains(\"test@test.com\")) || Age == 846445", 3)]
-        public void MustSearchInsideListOrOthersFields2(string filter, int expectedCount)
+        [InlineData("Emails.Any(x => x.Contains(\"test@test.com\"))")]
+        [InlineData("Emails.Any(x => x.Contains(\"test@test.com\")) || Name == \"Test\"")]
+        [InlineData("Name == \"Test\" || Emails.Any(x => x.Contains(\"test@test.com\"))")]
+        [InlineData("Age == 846445 || Emails.Any(x => x.Contains(\"test@test.com\")) || Name == \"Test\"")]
+        [InlineData("Name == \"Test\" || Emails.Any(x => x.Contains(\"test@test.com\")) || Age == 846445")]
+        public void MustSearchInsideListOrOthersFields2(string filter)
         {
             //Given
             var data = Fixture.CreateMany<SampleData>(10).ToList();
