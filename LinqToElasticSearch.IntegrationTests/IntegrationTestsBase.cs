@@ -12,7 +12,7 @@ namespace LinqToElasticSearch.IntegrationTests
     {
         protected readonly ElasticClient ElasticClient;
         protected readonly ElasticQueryable<T> Sut;
-        private readonly string IndexName = $"linqtoelasticsearch-${typeof(T).Name.ToLower()}-${Guid.NewGuid()}";
+        private readonly string IndexName = $"linqtoelasticsearch-{typeof(T).Name.ToLower()}-{Guid.NewGuid()}";
         protected Fixture Fixture { get; }
 
         protected IntegrationTestsBase()

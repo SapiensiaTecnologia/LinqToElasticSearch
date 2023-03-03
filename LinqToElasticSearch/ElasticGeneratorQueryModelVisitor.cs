@@ -11,14 +11,16 @@ using Remotion.Linq.Clauses.ResultOperators;
 
 namespace LinqToElasticSearch
 {
-    public class ElasticGeneratorQueryModelVisitor<TU>: QueryModelVisitorBase
+    public class ElasticGeneratorQueryModelVisitor<TU> : QueryModelVisitorBase
     {
         private readonly PropertyNameInferrerParser _propertyNameInferrerParser;
+        private readonly INodeVisitor _nodeVisitor;
         private QueryAggregator QueryAggregator { get; set; } = new QueryAggregator();
 
         public ElasticGeneratorQueryModelVisitor(PropertyNameInferrerParser propertyNameInferrerParser)
         {
             _propertyNameInferrerParser = propertyNameInferrerParser;
+            _nodeVisitor = new NodeVisitor();
         }
 
         public QueryAggregator GenerateElasticQuery<T>(QueryModel queryModel)
@@ -52,12 +54,13 @@ namespace LinqToElasticSearch
             tree.Visit(whereClause.Predicate);
             if (QueryAggregator.Query == null)
             {
-                QueryAggregator.Query = tree.QueryMap[whereClause.Predicate];
+                var node = tree.QueryMap[whereClause.Predicate];
+                QueryAggregator.Query = node.Accept(_nodeVisitor);
             }
             else
             {
                 var left = QueryAggregator.Query;
-                var right = tree.QueryMap[whereClause.Predicate];
+                var right = tree.QueryMap[whereClause.Predicate].Accept(_nodeVisitor);
 
                 var query = new BoolQuery
                 {
