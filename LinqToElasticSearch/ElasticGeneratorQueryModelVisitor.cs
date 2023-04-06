@@ -89,23 +89,24 @@ namespace LinqToElasticSearch
 
                 if (resultOperator is GroupResultOperator groupResultOperator)
                 {
-                    var members = new List<Tuple<string, Type>>();
+                    var members = new List<Tuple<string, Type, bool>>();
                     
                     switch (groupResultOperator.KeySelector)
                     {
                         case MemberExpression memberExpression:
-                            members.Add(new Tuple<string, Type>(memberExpression.Member.Name, memberExpression.Type));
+                            var isKeyword = memberExpression.Member.CustomAttributes.Any(x => x.AttributeType == typeof(KeywordAttribute));
+                            members.Add(new Tuple<string, Type, bool>(memberExpression.Member.Name, memberExpression.Type, isKeyword));
                             break;
                         case NewExpression newExpression:
                             members.AddRange(newExpression.Arguments
                                 .Cast<MemberExpression>()
-                                .Select(memberExpression => new Tuple<string, Type>(memberExpression.Member.Name, memberExpression.Type)));
+                                .Select(memberExpression => new Tuple<string, Type, bool>(memberExpression.Member.Name, memberExpression.Type, false)));
                             break;
                     }
                     
                     members.ForEach(property =>
                     {
-                        QueryAggregator.GroupByExpressions.Add(new GroupByProperties(property.Item1, property.Item2));
+                        QueryAggregator.GroupByExpressions.Add(new GroupByProperties(property.Item1, property.Item2, property.Item3));
                     });
                 }
             }
@@ -121,7 +122,8 @@ namespace LinqToElasticSearch
                 var direction = orderByClause.Orderings[0].OrderingDirection;
                 var propertyName = memberExpression.Member.Name;
                 var type = memberExpression.Type;
-                QueryAggregator.OrderByExpressions.Add(new OrderProperties(propertyName, type, direction)); 
+                var isKeyword = memberExpression.Member.CustomAttributes.Any(x => x.AttributeType == typeof(KeywordAttribute));
+                QueryAggregator.OrderByExpressions.Add(new OrderProperties(propertyName, type, direction, isKeyword)); 
             }
             
             base.VisitOrderByClause(orderByClause, queryModel, index);

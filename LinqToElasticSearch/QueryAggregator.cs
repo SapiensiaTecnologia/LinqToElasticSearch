@@ -18,37 +18,41 @@ namespace LinqToElasticSearch
     public class OrderProperties
     {
         public readonly Type PropertyType;
+        private readonly bool _isKeyword;
 
         public string PropertyName { get; set; }
         public OrderingDirection OrderingDirection { get; set; }
 
-        public OrderProperties(string propertyName, Type propertyType, OrderingDirection direction)
+        public OrderProperties(string propertyName, Type propertyType, OrderingDirection direction, bool isKeyword)
         {
             PropertyType = propertyType;
+            _isKeyword = isKeyword;
             PropertyName = propertyName;
             OrderingDirection = direction;
         }
 
         public string GetKeywordIfNecessary()
         {
-            return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
+            return _isKeyword || PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
         }
     }
 
     public class GroupByProperties
     {
+        private readonly bool _isKeyword;
         public string PropertyName { get; }
         public Type PropertyType { get; set; }
 
-        public GroupByProperties(string propertyName, Type propertyType)
+        public GroupByProperties(string propertyName, Type propertyType, bool isKeyword)
         {
+            _isKeyword = isKeyword;
             PropertyName = propertyName;
             PropertyType = propertyType;
         }
         
         public string GetKeywordIfNecessary()
         {
-            return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
+            return _isKeyword || PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
         }
     }
 }

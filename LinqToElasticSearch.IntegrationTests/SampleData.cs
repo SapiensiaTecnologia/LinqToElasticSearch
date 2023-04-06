@@ -22,6 +22,7 @@ namespace LinqToElasticSearch.IntegrationTests
         public TimeSpan? TimeSpanNullable { get; set; }
         [Keyword] public IList<string> Emails { get; set; }
         [StringEnum] [Keyword] public SampleType SampleTypePropertyString { get; set; }
+        [Keyword]public int CountryCode { get; set; }
     }
 
     public enum SampleType

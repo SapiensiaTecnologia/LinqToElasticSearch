@@ -30,7 +30,91 @@ namespace LinqToElasticSearch.IntegrationTests
                 ElasticClient.Indices.Delete(IndexName);
             }
 
-            ElasticClient.Indices.Create(IndexName, d => d.Settings(descriptor => descriptor).Map(m => m.AutoMap<T>()));
+            ElasticClient.Indices.Create(IndexName, d => d.Settings(descriptor => descriptor).Map(m =>
+            {
+                m.Properties(prop => prop
+                    .Number(sprop =>
+                    {
+                        sprop.Type(NumberType.Integer);
+                        return sprop.Name("age");
+                    }));
+                
+                m.Properties(prop => prop
+                    .Boolean(sprop => sprop.Name("can")));
+                
+                m.Properties(prop => prop
+                        .Text(sprop =>
+                        {
+                            sprop.Fields(f => 
+                                f.Keyword(k => k.IgnoreAbove(256).Name("keyword")));
+                            return sprop.Name("countryCode");
+                        }));
+
+                m.Properties(prop => prop
+                    .Date(sprop => sprop.Name("date")));
+                
+                m.Properties(prop => prop
+                    .Date(sprop => sprop.Name("date1")));
+
+                m.Properties(prop => prop
+                    .Keyword(sprop => sprop.Name("emails")));
+
+                m.Properties(prop => prop
+                    .Number(sprop => sprop.Name("enumNullable")));
+                          
+                m.Properties(prop => prop
+                    .Keyword(sprop => sprop.Name("folderId")));
+
+                m.Properties(prop => prop
+                    .Keyword(sprop => sprop.Name("id")));
+
+                m.Properties(prop => prop
+                    .Text(sprop =>
+                    {
+                        sprop.Fields(f => 
+                            f.Keyword(k => k.IgnoreAbove(256).Name("keyword")));
+                        return sprop.Name("lastName");
+                    }));
+
+                m.Properties(prop => prop
+                    .Text(sprop =>
+                    {
+                        sprop.Fields(f =>
+                            f.Keyword(k => k.IgnoreAbove(256).Name("keyword")));
+                        return sprop
+                            .Name("name");
+                    }));
+                        
+                
+                m.Properties(prop => prop
+                    .Number(sprop =>
+                    {
+                        sprop.Type(NumberType.Integer);
+                        return sprop.Name("sampleTypeProperty");
+                    }));
+                
+                m.Properties(prop => prop
+                    .Keyword(sprop => sprop.Name("sampleTypePropertyString")));
+
+                m.Properties(prop => prop
+                    .Number(sprop =>
+                    {
+                        sprop.Type(NumberType.Long);
+                        return sprop.Name("timeSpan");
+                    }));
+                
+                m.Properties(prop => prop
+                    .Number(sprop =>
+                    {
+                        sprop.Type(NumberType.Long);
+                        return sprop.Name("timeSpanNullable");
+                    }));
+
+                m.Properties(prop => prop
+                    .Keyword(sprop => sprop.Name("typeId")));
+                
+                return m;
+            }));
             
             Sut = new ElasticQueryable<T>(ElasticClient, IndexName);
             

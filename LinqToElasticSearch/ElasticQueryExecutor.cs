@@ -229,7 +229,8 @@ namespace LinqToElasticSearch
                     var date = (long) ck.Values.First();
                     return FormatDateTimeKey(date);
                 }
-                return ck.Values.First();
+
+                return Convert.ChangeType(ck.Values.First(), keyGenerics);
             }
             
             IDictionary<string, object> expando = new ExpandoObject();
