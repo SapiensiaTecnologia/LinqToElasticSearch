@@ -13,7 +13,9 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
             //Given
             var datas = Fixture.CreateMany<SampleData>().ToList();
             
-            datas[1].Name = "abcdef";
+            datas[0].Name = "abcdef";
+            datas[1].Name = "abcdefg";
+            datas[2].Name = "abcdef ghi";
             
             Bulk(datas);
 
@@ -25,7 +27,7 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
 
             //Then
             listResults.Count.Should().Be(1);
-            listResults[0].Name.Should().Be(datas[1].Name);
+            listResults[0].Name.Should().Be(datas[0].Name);
         }
         
         [Fact]

@@ -360,17 +360,22 @@ namespace LinqToElasticSearch
 
         private Node HandleStringProperty(Expression expression)
         {
+            var tempProperty = PropertyName;
+            if (PropertyType != null && PropertyType.ToString().ToLower().Contains("string"))
+            {
+                tempProperty = tempProperty + ".keyword";
+            }
             if (Value is Guid guid)
             {
                 Value = guid.ToString();
             }
-
+            
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:
-                    return new MatchPhraseNode(PropertyName, Value);
+                    return new MatchPhraseNode(tempProperty, Value);
                 case ExpressionType.NotEqual:
-                    return new NotNode(new MatchPhraseNode(PropertyName, Value));
+                    return new NotNode(new MatchPhraseNode(tempProperty, Value));
                 default:
                     return null;
             }
