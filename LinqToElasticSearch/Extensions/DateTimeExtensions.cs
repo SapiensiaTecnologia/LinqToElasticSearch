@@ -15,5 +15,15 @@ namespace LinqToElasticSearch.Extensions
         {
             return dateTime.Date.Add(FullDayTime);
         }
+        
+        public static DateTimeOffset GetBeginOfDay(this DateTimeOffset dateTime)
+        {
+            return dateTime.Date;
+        }
+
+        public static DateTimeOffset GetEndOfDay(this DateTimeOffset dateTime)
+        {
+            return dateTime.Date.Add(FullDayTime);
+        }
     }
 }
