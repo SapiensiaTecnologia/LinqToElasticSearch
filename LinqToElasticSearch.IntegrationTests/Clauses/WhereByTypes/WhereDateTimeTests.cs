@@ -8,7 +8,7 @@ using System.Linq.Dynamic.Core;
 
 namespace LinqToElasticSearch.IntegrationTests.Clauses.WhereByTypes
 {
-    public class WhereDateTests: IntegrationTestsBase<SampleData>
+    public class WhereDateTimeTests: IntegrationTestsBase<SampleData>
     {
         [Fact]
         public void WhereDateGreaterThan()

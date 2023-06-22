@@ -471,6 +471,10 @@ namespace LinqToElasticSearch
                     case DateTime _:
                         query = HandleDateProperty(expression);
                         break;
+                    case DateTimeOffset dateTimeOffset:
+                        Value = dateTimeOffset.UtcDateTime;
+                        query = HandleDateProperty(expression);
+                        break;
                     case bool _:
                         query = HandleBoolProperty(expression);
                         break;

@@ -12,7 +12,9 @@ namespace LinqToElasticSearch.IntegrationTests
         public string LastName { get; set; }
         public int Age { get; set; }
         public DateTime Date { get; set; }
+        public DateTimeOffset DateOffset { get; set; }
         public DateTime? Date1 { get; set; }
+        public DateTimeOffset? DateOffset1 { get; set; }
         public SampleType SampleTypeProperty { get; set; }
         public SampleType? EnumNullable { get; set; }
         public Guid? FolderId { get; set; }
