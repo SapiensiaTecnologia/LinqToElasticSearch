@@ -743,5 +743,39 @@ namespace LinqToElasticSearch.IntegrationTests.MainFrom
             // Then
             results.Should().HaveCount(30);
         }
+
+        [Fact]
+        public void ShouldUseKeywordSuffixWhenOrderByPropertyWithKeywordAttribute()
+        {
+            // Given
+            var samples = Fixture.CreateMany<SampleData>(35).ToList();
+            Bulk(samples);
+            ElasticClient.Indices.Refresh();
+            
+            // When
+            var result = Sut.OrderBy(x => x.CountryCode).ToList();
+
+            // Then
+            result.Should().HaveCount(35);
+        }
+        
+        [Fact]
+        public void ShouldUseKeywordSuffixWhenGroupByPropertyWithKeywordAttribute()
+        {
+            // Given
+            var samples = Fixture.CreateMany<SampleData>(4).ToList();
+            samples[0].CountryCode = samples[2].CountryCode;
+            samples[1].CountryCode = samples[3].CountryCode;
+            
+            Bulk(samples);
+            ElasticClient.Indices.Refresh();
+            
+            // When
+            var result = Sut.GroupBy(x => x.CountryCode).ToList();
+
+            // Then
+            result.Should().HaveCount(2);
+        }
+        
     }
 }
