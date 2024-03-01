@@ -114,8 +114,8 @@ namespace LinqToElasticSearch
                                 {
                                     queryAggregator.GroupByExpressions.ForEach(gbe =>
                                     {
-                                        var property = _propertyNameInferrerParser.Parser(gbe.PropertyName) + gbe.GetKeywordIfNecessary();
-                                        so.Terms($"group_by_{gbe.PropertyName}", t => t.Field(property));
+                                        var field = _propertyNameInferrerParser.Parser(gbe.ElasticFieldName) + gbe.GetKeywordIfNecessary();
+                                        so.Terms($"group_by_{gbe.PropertyName}", t => t.Field(field));
                                     });
 
                                     return so;

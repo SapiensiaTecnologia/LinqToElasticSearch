@@ -89,24 +89,32 @@ namespace LinqToElasticSearch
 
                 if (resultOperator is GroupResultOperator groupResultOperator)
                 {
-                    var members = new List<Tuple<string, Type>>();
+                    var propertiesToGroup = new List<GroupByProperties>();
                     
                     switch (groupResultOperator.KeySelector)
                     {
                         case MemberExpression memberExpression:
-                            members.Add(new Tuple<string, Type>(memberExpression.Member.Name, memberExpression.Type));
+                            propertiesToGroup.Add(new GroupByProperties(memberExpression.Member.Name, memberExpression.Member.Name, memberExpression.Type));
                             break;
+                        
                         case NewExpression newExpression:
-                            members.AddRange(newExpression.Arguments
-                                .Cast<MemberExpression>()
-                                .Select(memberExpression => new Tuple<string, Type>(memberExpression.Member.Name, memberExpression.Type)));
+
+                            var i = 0;
+                            foreach (var arg in newExpression.Arguments)
+                            {
+                                var memberExpression = (MemberExpression) arg;
+
+                                var fieldName = memberExpression.Member.Name;
+                                var propertyName = newExpression.Members[i].Name;
+                                var propertyType = memberExpression.Type;
+                                
+                                propertiesToGroup.Add(new GroupByProperties(fieldName, propertyName, propertyType));
+                                i++;
+                            }
                             break;
                     }
                     
-                    members.ForEach(property =>
-                    {
-                        QueryAggregator.GroupByExpressions.Add(new GroupByProperties(property.Item1, property.Item2));
-                    });
+                    QueryAggregator.GroupByExpressions.AddRange(propertiesToGroup);
                 }
             }
             
@@ -121,10 +129,26 @@ namespace LinqToElasticSearch
                 var direction = orderByClause.Orderings[0].OrderingDirection;
                 var propertyName = memberExpression.Member.Name;
                 var type = memberExpression.Type;
-                QueryAggregator.OrderByExpressions.Add(new OrderProperties(propertyName, type, direction)); 
+                var elasticFieldName = DiscoveryElasticFieldName(propertyName);
+                QueryAggregator.OrderByExpressions.Add(new OrderProperties(elasticFieldName, type, direction)); 
             }
             
             base.VisitOrderByClause(orderByClause, queryModel, index);
+        }
+
+        private string DiscoveryElasticFieldName(string propertyName)
+        {
+            if (QueryAggregator.GroupByExpressions.Any())
+            {
+                if (QueryAggregator.GroupByExpressions.Count == 1)
+                {
+                    return QueryAggregator.GroupByExpressions[0].ElasticFieldName;
+                }
+                
+                return QueryAggregator.GroupByExpressions.First(x => x.PropertyName == propertyName).ElasticFieldName;
+            }
+
+            return propertyName;
         }
     }
 }

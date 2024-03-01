@@ -39,13 +39,15 @@ namespace LinqToElasticSearch
     {
         public string PropertyName { get; }
         public Type PropertyType { get; set; }
-
-        public GroupByProperties(string propertyName, Type propertyType)
+        public string ElasticFieldName { get; set; }
+        
+        public GroupByProperties(string elasticFieldName, string propertyName, Type propertyType)
         {
             PropertyName = propertyName;
             PropertyType = propertyType;
+            ElasticFieldName = elasticFieldName;
         }
-        
+
         public string GetKeywordIfNecessary()
         {
             return PropertyType.Name.ToLower().Contains("string") ? ".keyword" : "";
