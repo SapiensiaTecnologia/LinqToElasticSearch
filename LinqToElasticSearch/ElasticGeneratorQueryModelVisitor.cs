@@ -37,6 +37,60 @@ namespace LinqToElasticSearch
             VisitBodyClauses(queryModel.BodyClauses, queryModel);
             VisitResultOperators(queryModel.ResultOperators, queryModel);
         }
+
+        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
+        {
+            switch (selectClause.Selector)
+            {
+                case NewExpression newExpression:
+                    var i = 0;
+                    foreach (var arg in newExpression.Arguments)
+                    {
+                        string fieldName = null;
+                        string propertyName = null;
+                        Type propertyType = null;
+                        ProjectionType projectionType = ProjectionType.Property;
+                        
+                        switch (arg)
+                        {
+                            case MemberExpression memberExpression:
+                                fieldName = memberExpression.Member.Name;
+                                propertyName = newExpression.Members[i].Name;
+                                propertyType = memberExpression.Type;
+                                projectionType = ProjectionType.Property;
+                                break;
+                            
+                            case SubQueryExpression subQueryExpression:
+                                fieldName = null;
+                                propertyName = newExpression.Members[i].Name;
+                                propertyType = subQueryExpression.Type;
+
+                                if (subQueryExpression.QueryModel.ResultOperators.Any(x => x is CountResultOperator))
+                                {
+                                    projectionType = ProjectionType.Count;
+                                }
+                                else if (subQueryExpression.QueryModel.ResultOperators.Any(x => x is MaxResultOperator))
+                                {
+                                    projectionType = ProjectionType.Max;
+                                }
+                                else if (subQueryExpression.QueryModel.ResultOperators.Any(x => x is MinResultOperator))
+                                {
+                                    projectionType = ProjectionType.Min;
+                                }
+
+                                break;
+                        }
+
+                        QueryAggregator.SelectExpressions.Add(new SelectProperties(fieldName, propertyName, propertyType, i, projectionType));
+                        i++;
+                    }
+                    
+                    break;
+                    
+            }
+
+            base.VisitSelectClause(selectClause, queryModel);
+        }
         
         public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
         {

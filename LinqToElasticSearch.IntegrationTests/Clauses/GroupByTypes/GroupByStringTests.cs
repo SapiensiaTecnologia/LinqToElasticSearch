@@ -142,6 +142,45 @@ namespace LinqToElasticSearch.IntegrationTests.Clauses.GroupByTypes
         }
         
         [Fact]
+        public void GroupByStringEqualWithMultipleGroupingAndSortingAndCount()
+        {
+            //Given
+            var datas = Fixture.CreateMany<SampleData>(4).ToList();
+            datas[0].Name = "abcdef";
+            datas[0].Can = true;
+            datas[1].Name = "abcdef";
+            datas[1].Can = true;
+            datas[2].Name = "abcdef";
+            datas[2].Can = false;
+            datas[3].Name = "bcdefg";
+            datas[3].Can = false;
+
+            Bulk(datas);
+            ElasticClient.Indices.Refresh();
+
+            //When
+            var results = Sut.GroupBy(x => new { I0 = x.Name, I1 = x.Can})
+                .OrderBy(x => x.Key.I0)
+                .ThenBy(x => x.Key.I1)
+                .Select(group => new { Nome = group.Key.I0, Pode = group.Key.I1, Total = group.Count() })
+                .ToList();
+            
+            //Then
+            results.Count.Should().Be(3);
+            results[0].Total.Should().Be(1);
+            results[0].Nome.Should().Be("abcdef");
+            results[0].Pode.Should().Be(false);
+            
+            results[1].Total.Should().Be(2);
+            results[1].Nome.Should().Be("abcdef");
+            results[1].Pode.Should().Be(true);
+            
+            results[2].Total.Should().Be(1);
+            results[2].Nome.Should().Be("bcdefg");
+            results[2].Pode.Should().Be(false);
+        }
+
+        [Fact]
         public void GroupByStringEqualWithMultipleGrouping()
         {
             //Given
